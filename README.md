@@ -1,4 +1,4 @@
-# ft_irc - Internet Relay Chat Server
+![ft_irc Banner](./assets/IRC-ProjectBanner.png)
 
 ## Introduction
 Internet Relay Chat (IRC) is a text-based communication protocol that enables real-time messaging over the Internet. It supports both public and private communication through channels and direct messages. IRC clients connect to an IRC server, which may be part of a larger IRC network.
