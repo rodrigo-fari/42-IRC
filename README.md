@@ -70,20 +70,4 @@ Compile the project and run the server as follows:
 
 ## Author
 
-<a href="https://github.com/rodrigo-fari">
-  <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white"
-       style="vertical-align: middle;" />
-</a>
-<span style="vertical-align: middle;"> - Rodrigo Faria.</span><br><br>
-
-<a href="https://github.com/reinatch">
-  <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white"
-       style="vertical-align: middle;" />
-</a>
-<span style="vertical-align: middle;"> - Reinaldo Rodrigues.</span><br><br>
-
-<a href="https://github.com/cde-paiv">
-  <img src="https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white"
-       style="vertical-align: middle;" />
-</a>
-<span style="vertical-align: middle;"> - Christofer Mota.</span>
+![Rodrigo Faria.](https://github.com/rodrigo-fari)  |  ![Reinaldo Rodrigues.](https://github.com/reinatch)  |  ![Christofer Mota.](https://github.com/cde-paiv)
