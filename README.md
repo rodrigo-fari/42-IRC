@@ -19,7 +19,7 @@ This project emphasizes low-level network programming, event-driven design, and 
 ```text
 .
 ├── Makefile              # Build automation (all, clean, fclean, re)
-├── include/              # Header files (.hpp, .tpp, .ipp)
+├── inc/                  # Header files (.hpp, .tpp, .ipp)
 │   ├── commands/         # IRC command headers
 │   ├── core/             # Core IRC logic headers
 │   └── network/          # Networking and socket headers
