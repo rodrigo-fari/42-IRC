@@ -6,7 +6,7 @@
 #    By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/12 17:54:45 by rde-fari          #+#    #+#              #
-#    Updated: 2026/01/12 17:55:43 by rde-fari         ###   ########.fr        #
+#    Updated: 2026/01/12 17:58:46 by rde-fari         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -41,7 +41,7 @@ BOLD        = \033[1m
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	@printf "$(BLUE)$(BOLD)[ + ] Linking executable: $(NAME)$(RESET)\n"
+	@printf "$(BLUE)[ + ] Linking executable: $(NAME)$(RESET)\n"
 	@$(CXX) $(CXXFLAGS) $(OBJS) -o $(NAME)
 	@printf "$(GREEN)$(BOLD)[ ✓ ] COMPILATION SUCCESSFUL!$(RESET)\n"
 
