@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Core.hpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
+/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/12 17:52:33 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/01/12 17:57:20 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/01/21 17:01:58 by rerodrig         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,8 @@
 # include <exception>
 # include <limits>
 # include <sstream>
+
 # include "../colors/Colors.hpp"
+# include "../network/Network.hpp"
 
 #endif
