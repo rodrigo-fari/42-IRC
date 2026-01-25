@@ -16,6 +16,7 @@ int main(int argc, char **argv)
 {
 	const std::string port = (argc >= 2) ? argv[1] : "6667";
 	Server server(port);
-	server.run();
+
+	server.init();
 	return 0;
 }

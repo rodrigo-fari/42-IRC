@@ -16,7 +16,8 @@
 MAKEFLAGS	+= --silent
 NAME        = ircserv
 CXX         = c++
-CXXFLAGS    = -Wall -Wextra -Werror -std=c++98 -g3 -fsanitize=address
+SANITIZERS  = -fsanitize=address
+CXXFLAGS    = -Wall -Wextra -Werror -std=c++98 -g3
 SRC_DIR     = src
 OBJ_DIR     = obj
 INC_DIR     = include
