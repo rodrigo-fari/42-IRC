@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+         #
+#    By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/12 17:54:45 by rde-fari          #+#    #+#              #
-#    Updated: 2026/01/16 21:55:48 by rde-fari         ###   ########.fr        #
+#    Updated: 2026/01/30 18:22:41 by rerodrig         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -61,4 +61,7 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+rr: re
+	@./$(NAME)
+
+.PHONY: all clean fclean re rr
