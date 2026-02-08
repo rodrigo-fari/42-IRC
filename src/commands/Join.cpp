@@ -39,7 +39,7 @@ static void replyTopicAndNames(ServerState& st, Client& c, Channel& ch) {
     std::string names;
     bool first = true;
     for (size_t i = 0; i < members.size(); ++i) {
-        Client* member = st.clientByFd(members[i]);
+        Client* m = st.clientByFd(members[i]);
         if (!m)
             continue;
         if (!first)
@@ -49,18 +49,18 @@ static void replyTopicAndNames(ServerState& st, Client& c, Channel& ch) {
             names += "@";
         names += m->nick;
     }
-    sendTo(c, "353 " + c.nick + " = " + ch.getName() + " :" + names);
-    sendTo(c, "366 " + c.nick + " " + ch.getName() + " :End of NAMES list");
+    sendTo(c, ":" + st.serverName + " 353 " + c.nick + " = " + ch.getName() + " :" + names);
+    sendTo(c, ":" + st.serverName + " 366 " + c.nick + " " + ch.getName() + " :End of NAMES list");
 }
 
 // JOIN
 void handleJoin(ServerState& st, Client& c, const std::vector<std::string>& params) {
-    if (!client.registered) {
-        sendTo(c, "451 " + c.nick + " JOIN :You have not registered");
+    if (!c.registered) {
+        sendTo(c, ":" + st.serverName + " 451 " + c.nick + " JOIN :You have not registered");
         return;
     }
     if (params.size() < 1) {
-        sendTo(client, ":" + st.serverName + " 461 " + client.nick + " JOIN :Not enough parameters");
+        sendTo(c, ":" + st.serverName + " 461 " + c.nick + " JOIN :Not enough parameters");
         return;
     }
     const std::string chanName = params[0];
@@ -68,7 +68,7 @@ void handleJoin(ServerState& st, Client& c, const std::vector<std::string>& para
 
     // validacao basica nome do canal
     if (chanName.empty() || chanName[0] != '#') {
-        sendTo(client, ":" + st.serverName + " 403 " + client.nick + " " + chanName + " :No such channel");
+        sendTo(c, ":" + st.serverName + " 403 " + c.nick + " " + chanName + " :No such channel");
         return;
     }
     
@@ -81,38 +81,38 @@ void handleJoin(ServerState& st, Client& c, const std::vector<std::string>& para
     Channel& ch = st.channels[chanName];
 
     // ja esta no canal
-    if (ch.isMember(client.fd)) {
-        sendTo(client, ":" + st.serverName + " 443 " + client.nick + " " + chanName + " :is already on channel");
+    if (ch.isMember(c.fd)) {
+        sendTo(c, ":" + st.serverName + " 443 " + c.nick + " " + chanName + " :is already on channel");
         return;
     }
 
     // i+ invite only
-    if (ch.inviteOnly && !ch.isInvited(client.fd)) {
-        sendTo(client, ":" + st.serverName + " 473 " + client.nick + " " + chanName + " :Cannot join channel (invite only)");
+    if (ch.inviteOnly && !ch.isInvited(c.fd)) {
+        sendTo(c, ":" + st.serverName + " 473 " + c.nick + " " + chanName + " :Cannot join channel (invite only)");
         return;
     }
 
     // k+ key
     if (ch.hasKey && ch.key != providedKey) {
-        sendTo(client, ":" + st.serverName + " 475 " + client.nick + " " + chanName + " :Cannot join channel (bad key)");
+        sendTo(c, ":" + st.serverName + " 475 " + c.nick + " " + chanName + " :Cannot join channel (bad key)");
         return;
     }
 
     // l+ limit
     if (ch.hasLimit && ch.memberCount() >= ch.limit) {
-        sendTo(client, ":" + st.serverName + " 471 " + client.nick + " " + chanName + " :Cannot join channel (channel is full)");
+        sendTo(c, ":" + st.serverName + " 471 " + c.nick + " " + chanName + " :Cannot join channel (channel is full)");
         return;
     }
 
     // adiciona o membro
-    ch.addMember(client.fd);
-    ch.uninvite(client.fd); // remove o convite se tiver
+    ch.addMember(c.fd);
+    ch.uninvite(c.fd); // remove o convite se tiver
 
     // primeiro membro vira op
     if (create)
-        ch.addOp(client.fd);
+        ch.addOp(c.fd);
     
     // broadcast join
-    broadcast(st, ch, prefix(client) + " JOIN " +  chanName);
-    replyTopicAndNames(st, client, ch);
+    broadcastChannel(st, ch, prefix(c) + " JOIN " +  chanName);
+    replyTopicAndNames(st, c, ch);
 }
