@@ -5,12 +5,12 @@
 #include <vector>
 
 struct ServerState;
-class Client;
+class User;
 
-// JOIN params "#chan", "key"
-void handleJoin(ServerState& st, Client& client, const std::vector<std::string>& params);
+// JOIN params "#chan", "channelPassword"
+void handleJoin(ServerState& st, User& client, const std::vector<std::string>& params);
 
 // PART params "#chan"(sem ":")
-void handlePart(ServerState& st, Client& client, const std::vector<std::string>& params, const std::string& trailing);
+void handlePart(ServerState& st, User& client, const std::vector<std::string>& params, const std::string& trailing);
 
 #endif

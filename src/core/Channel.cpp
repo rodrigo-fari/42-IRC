@@ -2,106 +2,104 @@
 #include <algorithm>
 
 Channel::Channel()
-    : inviteOnly(false), topicLock(false), hasKey(false), key(""),
-        hasLimit(false), limit(0) {}
+    : inviteOnlyPolicy(false), topicLockPolicy(false), hasChannelPassword(false), channelPassword(""),
+        hasMaxUsersAmount(false), maxUsersAmount(0) {}
 
 Channel::Channel(const std::string& name)
-    : inviteOnly(false), topicLock(false), hasKey(false), key(""), 
-        hasLimit(false), limit(0), _name(name), _topic("") {}
+    : inviteOnlyPolicy(false), topicLockPolicy(false), hasChannelPassword(false), channelPassword(""),
+        hasMaxUsersAmount(false), maxUsersAmount(0), _channelName(name), _channelTopic("") {}
 
-const std::string& Channel::getName() const {return _name;}
-const std::string& Channel::getTopic() const {return _topic;}
+const std::string& Channel::getChannelName() const {return _channelName;}
+const std::string& Channel::getChannelTopic() const {return _channelTopic;}
 
-void Channel::setTopic(const std::string& topic) {_topic = topic;}
+void Channel::setTopic(const std::string& topic) {_channelTopic = topic;}
 
-// verifica se o membro foi encontrado no conteiner 
-bool Channel::isMember(int fd) const {
-    return _members.find(fd) != _members.end();
+// verifica se o membro foi encontrado no conteiner
+bool Channel::isUserInChannel(int fileDescriptor) const {
+    return _usersInChannel.find(fileDescriptor) != _usersInChannel.end();
 }
 
 // verifica se o operador foi encontrado no conteiner
-bool Channel::isOp(int fd) const {
-    return _ops.find(fd) != _ops.end();
+bool Channel::isChannelOperator(int fileDescriptor) const {
+    return _channelOperators.find(fileDescriptor) != _channelOperators.end();
 }
 
 // tenta inserir no conteiner de membros, se foi novo registra
 // se ja existia diz que nao adicionou
-bool Channel::addMember(int fd) {
-    std::pair<std::set<int>::iterator, bool> res = _members.insert(fd);
+bool Channel::addUserToChannel(int fileDescriptor) {
+    std::pair<std::set<int>::iterator, bool> res = _usersInChannel.insert(fileDescriptor);
     if (res.second) {
-        _joinOrder.push_back(fd);
+        _usersJoinOrder.push_back(fileDescriptor);
         return true;
     }
     return false;
 }
 
-// se nao for membro retorna falso, 
+// se nao for membro retorna falso,
 // se for remove do conteiner e do join order
-bool Channel::removeMember(int fd) {
-    if (!isMember(fd)) return false;
+bool Channel::removeUserFromChannel(int fileDescriptor) {
+    if (!isUserInChannel(fileDescriptor)) return false;
 
-    _members.erase(fd);
-    _ops.erase(fd);
-    _invited.erase(fd);
-    _removeFromJoinOrder(fd);
+    _usersInChannel.erase(fileDescriptor);
+    _channelOperators.erase(fileDescriptor);
+    _invitedUsers.erase(fileDescriptor);
+    _removeFromUsersJoinOrder(fileDescriptor);
     return true;
 }
 
 // verifica se e membro e tenta promover a opererador,
 //se ja era operador ou nao era membro retorna falso
-bool Channel::addOp(int fd) {
-    if (!isMember(fd)) return false;
-    std::pair<std::set<int>::iterator, bool> res = _ops.insert(fd);
+bool Channel::addChannelOperator(int fileDescriptor) {
+    if (!isUserInChannel(fileDescriptor)) return false;
+    std::pair<std::set<int>::iterator, bool> res = _channelOperators.insert(fileDescriptor);
     return res.second;
 }
 
 // verifica se e operador e tenta remover a opererador
-bool Channel::removeOp(int fd) {
-    if (!isOp(fd)) return false;
-    _ops.erase(fd);
+bool Channel::removeChannelOperator(int fileDescriptor) {
+    if (!isChannelOperator(fileDescriptor)) return false;
+    _channelOperators.erase(fileDescriptor);
     return true;
 }
 
 // verifica se o membro esta na lista de convidados
-bool Channel::isInvited(int fd) const {
-    return _invited.find(fd) != _invited.end();
+bool Channel::isUserInvited(int fileDescriptor) const {
+    return _invitedUsers.find(fileDescriptor) != _invitedUsers.end();
 }
 
-void Channel::invite(int fd) { _invited.insert(fd); } // adiciona o fd no set _invited, marca o user como convidado
-void Channel::uninvite(int fd) {_invited.erase(fd); } // remove o fd do set _invited, marca o user como nao convidado
-bool Channel::empty() const { return _members.empty(); } // verifica se o canal esta vazio, nao tem membros
-size_t Channel::memberCount() const { return _members.size(); } // retorna a quantidade de membros no canal
-size_t Channel::opCount() const { return _ops.size(); } // retorna a quantidade de operadores no canal
+void Channel::inviteUser(int fileDescriptor) { _invitedUsers.insert(fileDescriptor); }
+void Channel::uninviteUser(int fileDescriptor) {_invitedUsers.erase(fileDescriptor); }
+bool Channel::empty() const { return _usersInChannel.empty(); }
+size_t Channel::usersCount() const { return _usersInChannel.size(); }
+size_t Channel::operatorsCount() const { return _channelOperators.size(); }
 
- // retorna os membros do canal na ordem em que entraram
-std::vector<int> Channel::getMembersInJoinOrder() const {
+std::vector<int> Channel::getUsersInChannelJoinOrder() const {
     std::vector<int> out;
-    for (size_t i = 0; i < _joinOrder.size(); ++i) {
-        int fd = _joinOrder[i];
-        if (isMember(fd)) {
-            out.push_back(fd);
+    for (size_t i = 0; i < _usersJoinOrder.size(); ++i) {
+        int fileDescriptor = _usersJoinOrder[i];
+        if (isUserInChannel(fileDescriptor)) {
+            out.push_back(fileDescriptor);
         }
     }
     return out;
 }
 
 // garante que haja pelo menos um operador no canal, promovendo o primeiro membro encontrado
-int Channel::ensureLeastOneOp() {
-    if (opCount() > 0) { return -1; }
+int Channel::ensureAtLeastOneOperator() {
+    if (operatorsCount() > 0) { return -1; }
     if (empty()) { return -1; }
 
-    for (size_t i = 0; i < _joinOrder.size(); ++i) {
-        int fd = _joinOrder[i];
-        if (isMember(fd)) {
-            addOp(fd);
-            return fd;
+    for (size_t i = 0; i < _usersJoinOrder.size(); ++i) {
+        int fileDescriptor = _usersJoinOrder[i];
+        if (isUserInChannel(fileDescriptor)) {
+            addChannelOperator(fileDescriptor);
+            return fileDescriptor;
         }
     }
     return -1;
 }
 
-// remove o fd do vetor de join order, usado quando um membro sai do canal
-void Channel::_removeFromJoinOrder(int fd) {
-    _joinOrder.erase(std::remove(_joinOrder.begin(), _joinOrder.end(), fd),
-    _joinOrder.end());
+void Channel::_removeFromUsersJoinOrder(int fileDescriptor) {
+    _usersJoinOrder.erase(std::remove(_usersJoinOrder.begin(), _usersJoinOrder.end(), fileDescriptor),
+    _usersJoinOrder.end());
 }

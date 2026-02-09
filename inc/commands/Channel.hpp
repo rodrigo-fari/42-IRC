@@ -11,55 +11,55 @@ class Channel {
         Channel(const std::string& name);
 
         // getters
-        const std::string& getName() const;
-        const std::string& getTopic() const;
+        const std::string& getChannelName() const;
+        const std::string& getChannelTopic() const;
 
         // members / ops
-        bool isMember(int fd) const;
-        bool isOp(int fd) const;
+        bool isUserInChannel(int fileDescriptor) const;
+        bool isChannelOperator(int fileDescriptor) const;
 
-        bool addMember(int fd);
-        bool removeMember(int fd);
-        bool addOp(int fd);
-        bool removeOp(int fd);
+        bool addUserToChannel(int fileDescriptor);
+        bool removeUserFromChannel(int fileDescriptor);
+        bool addChannelOperator(int fileDescriptor);
+        bool removeChannelOperator(int fileDescriptor);
 
         // invites
-        bool isInvited(int fd) const;
-        void invite(int fd);
-        void uninvite(int fd);
+        bool isUserInvited(int fileDescriptor) const;
+        void inviteUser(int fileDescriptor);
+        void uninviteUser(int fileDescriptor);
 
         // info util
         bool empty() const;
-        size_t memberCount() const;
-        size_t opCount() const;
+        size_t usersCount() const;
+        size_t operatorsCount() const;
 
         // return members
-        std::vector<int> getMembersInJoinOrder() const;
+        std::vector<int> getUsersInChannelJoinOrder() const;
 
         // promote member to operator
-        int ensureLeastOneOp();
+        int ensureAtLeastOneOperator();
 
         // modes
-        bool inviteOnly; // +i
-        bool topicLock; // +t
-        bool hasKey; // +k
-        std::string key; 
-        bool hasLimit; // +l
-        int limit;
+        bool inviteOnlyPolicy; // +i
+        bool topicLockPolicy; // +t
+        bool hasChannelPassword; // +k
+        std::string channelPassword;
+        bool hasMaxUsersAmount; // +l
+        int maxUsersAmount;
 
         void setTopic(const std::string& topic);
 
     private:
-        std::string _name;
-        std::string _topic;
+        std::string _channelName;
+        std::string _channelTopic;
 
-        std::set<int> _members;
-        std::set<int> _ops;
-        std::set<int> _invited;
+        std::set<int> _usersInChannel;
+        std::set<int> _channelOperators;
+        std::set<int> _invitedUsers;
 
-        std::vector<int> _joinOrder; // to maintain the order of members joining
+        std::vector<int> _usersJoinOrder; // to maintain the order of members joining
 
-        void _removeFromJoinOrder(int fd);
+        void _removeFromUsersJoinOrder(int fileDescriptor);
 };
 
 #endif
