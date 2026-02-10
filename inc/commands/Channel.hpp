@@ -8,58 +8,56 @@
 class Channel {
     public:
         Channel();
-        Channel(const std::string& name);
+        Channel(const std::string& channelName);
 
-        // getters
-        const std::string& getChannelName() const;
-        const std::string& getChannelTopic() const;
+        // Members / Ops / Invited
+    bool isUserInChannel(int fd) const;
+    bool addUserToChannel(int fd);       // true se entrou agora
+    bool removeUserFromChannel(int fd);  // true se removeu
 
-        // members / ops
-        bool isUserInChannel(int fileDescriptor) const;
-        bool isChannelOperator(int fileDescriptor) const;
+    bool isChannelOperator(int fd) const;
+    bool addChannelOperator(int fd);     // só se for membro
+    bool removeChannelOperator(int fd);
 
-        bool addUserToChannel(int fileDescriptor);
-        bool removeUserFromChannel(int fileDescriptor);
-        bool addChannelOperator(int fileDescriptor);
-        bool removeChannelOperator(int fileDescriptor);
+    bool isUserInvited(int fd) const;
+    void inviteUser(int fd);
+    void uninviteUser(int fd);
 
-        // invites
-        bool isUserInvited(int fileDescriptor) const;
-        void inviteUser(int fileDescriptor);
-        void uninviteUser(int fileDescriptor);
+    // Topic
+    const std::string& getChannelTopic() const;
+    void setTopic(const std::string& topic);
 
-        // info util
-        bool empty() const;
-        size_t usersCount() const;
-        size_t operatorsCount() const;
+    // Info
+    const std::string& getChannelName() const;
+    bool empty() const;
+    size_t usersCount() const;
+    size_t operatorsCount() const;
 
-        // return members
-        std::vector<int> getUsersInChannelJoinOrder() const;
+    // Ordem de join pra broadcast e pra promover op
+    std::vector<int> getUsersInChannelJoinOrder() const;
 
-        // promote member to operator
-        int ensureAtLeastOneOperator();
+    // se ficar sem op, promove o mais antigo
+    int ensureAtLeastOneOperator();
 
-        // modes
-        bool inviteOnlyPolicy; // +i
-        bool topicLockPolicy; // +t
-        bool hasChannelPassword; // +k
-        std::string channelPassword;
-        bool hasMaxUsersAmount; // +l
-        int maxUsersAmount;
+    //  Modes (ja prepara pro MODE depois
+    bool inviteOnlyPolicy;          // +i
+    bool topicLockPolicy;           // +t
+    bool hasChannelPassword;        // +k
+    std::string channelPassword;
+    bool hasMaxUsersAmount;         // +l
+    int maxUsersAmount;
 
-        void setTopic(const std::string& topic);
+private:
+    std::string _channelName;
+    std::string _channelTopic;
 
-    private:
-        std::string _channelName;
-        std::string _channelTopic;
+    std::set<int> _usersInChannel;        // members
+    std::set<int> _channelOperators;      // ops
+    std::set<int> _invitedUsers;          // invited
 
-        std::set<int> _usersInChannel;
-        std::set<int> _channelOperators;
-        std::set<int> _invitedUsers;
+    std::vector<int> _usersJoinOrder;
 
-        std::vector<int> _usersJoinOrder; // to maintain the order of members joining
-
-        void _removeFromUsersJoinOrder(int fileDescriptor);
+    void _removeFromJoinOrder(int fd);
 };
 
 #endif
