@@ -10,7 +10,7 @@ class Channel {
         Channel();
         Channel(const std::string& channelName);
 
-        // Members / Ops / Invited
+    // Members / Ops / Invited
     bool isUserInChannel(int fd) const;
     bool addUserToChannel(int fd);       // true se entrou agora
     bool removeUserFromChannel(int fd);  // true se removeu
