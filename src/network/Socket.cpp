@@ -13,7 +13,7 @@ void set_pollout_for_fd(PollSet &pollset, int fd)
 	}
 }
 
-Server::Server(const std::string &port) : port(port), serverSocket(-1) {}
+Server::Server(const std::string &port, const std::string &ip) : port(port), bindIp(ip), serverSocket(-1) {}
 
 Server::~Server() { close_all(); }
 
@@ -25,7 +25,7 @@ int Server::set_nonblocking(int fd)
 	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-int Server::create_listener(const std::string &port)
+int Server::create_listener(const std::string &port, const std::string &ip)
 {
 
 	struct addrinfo hints;
@@ -35,7 +35,7 @@ int Server::create_listener(const std::string &port)
 	hints.ai_flags = AI_PASSIVE;
 
 	struct addrinfo *res = 0;
-	const int rv = getaddrinfo(0, port.c_str(), &hints, &res);
+	const int rv = getaddrinfo(ip.c_str(), port.c_str(), &hints, &res);
 	if (rv != 0)
 	{
 		std::cerr << "getaddrinfo: " << gai_strerror(rv) << "\n";
@@ -123,7 +123,7 @@ void Server::disconnect(std::vector<pollfd> &pfds, std::size_t i)
 
 void Server::init()
 {
-	int listener_fd = create_listener(port);
+	int listener_fd = create_listener(port, bindIp);
 	if (DEBUG)
 		std::cout << "[NETWORK] create_listener returned: " << listener_fd << std::endl;
 	serverSocket.setSocketFd(listener_fd);
@@ -143,7 +143,7 @@ void Server::init()
 
 void Server::run()
 {
-	std::cout << "[SERVER] listening on port " << port << "\n";
+	std::cout << "[SERVER] listening on " << bindIp << ":" << port << "\n";
 	while (true)
 	{
 		if (DEBUG)
@@ -235,33 +235,19 @@ void Server::run()
 						std::cout << "[NETWORK] receiveData returned: " << bitesRead << std::endl;
 					if (bitesRead > 0)
 					{
-						reader.inBuffer.append(buffer, buffer + bitesRead);
-						while (true)
+						std::string rawData(buffer, bitesRead);
+						std::vector<std::string> lines = messageFramer.processRawData(fd, rawData);
+						
+						for (size_t k = 0; k < lines.size(); ++k)
 						{
-							std::string line;
-							size_t pos = reader.inBuffer.find("\r\n");
-							if (pos != std::string::npos)
-							{
-								line = reader.inBuffer.substr(0, pos);
-								reader.inBuffer.erase(0, pos + 2);
-							}
-							else
-							{
-								pos = reader.inBuffer.find('\n');
-								if (pos == std::string::npos)
-									break;
-								line = reader.inBuffer.substr(0, pos);
-								reader.inBuffer.erase(0, pos + 1);
-							}
-							std::cout << "[RECEIVED] fd=" << fd << " line: " << line << "\n";
-							std::string normalizedLine;
-							if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
-								normalizedLine = line;
-							else if (!line.empty() && line[line.size() - 1] == '\n')
-								normalizedLine = line.substr(0, line.size() - 1) + "\r\n";
-							else
-								normalizedLine = line + "\r\n";
-							reader.outBuffer += "ECHO: " + normalizedLine;
+							const std::string& line = lines[k];
+							std::cout << "\n[RECEIVED INPUT][FD: " << fd << "]= " << line << "\n";
+							messagePayload payload = parseMessage(line);
+							std::cout << "\n[PARSED COMMAND]= " << payload.command << "\n";
+							for (size_t j = 0; j < payload.params.size(); ++j)
+								std::cout << "[PARSED PARAM]= " << j << "]: " << payload.params[j] << "\n";
+							
+							reader.outBuffer += "> " + line + "<--------|Message sent by server!" + "\r\n";
 							set_pollout_for_fd(pollset, fd);
 						}
 						continue;
@@ -269,6 +255,7 @@ void Server::run()
 					if (bitesRead == 0)
 					{
 						std::cout << "[NETWORK] Client fd=" << fd << " disconnected (recv returned 0)" << std::endl;
+						messageFramer.clearClient(fd);
 						disconnect(pollset.pfds, i);
 						break;
 					}

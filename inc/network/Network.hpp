@@ -17,6 +17,9 @@
 #include <set>
 #include <map>
 
+#include "IrcMessageFramer.hpp"
+#include "../parser/IrcParser.hpp"
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -114,12 +117,14 @@ class Server
 {
 private:
 	std::string port;
+	std::string bindIp;
 	Socket serverSocket;
 	std::map<int, Connection> connections;
 	PollSet pollset;
+	IrcMessageFramer messageFramer;
 
 public:
-	Server(const std::string &port);
+	Server(const std::string &port, const std::string &ip = "0.0.0.0");
 	~Server();
 
 	void run();
@@ -127,7 +132,7 @@ public:
 	int getSize() const { return pollset.pfds.size(); }
 
 	int set_nonblocking(int fd);
-	int create_listener(const std::string &port);
+	int create_listener(const std::string &port, const std::string &ip);
 	void close_all();
 	void disconnect(std::vector<pollfd> &pfds, std::size_t i);
 };
