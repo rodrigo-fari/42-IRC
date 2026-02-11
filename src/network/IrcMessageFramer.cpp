@@ -6,11 +6,11 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/09 19:11:23 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/11 10:54:08 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/11 18:44:40 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "IrcMessageFramer.hpp"
+#include "network/IrcMessageFramer.hpp"
 
 /**
  * @brief Processa informacao crua do cliente

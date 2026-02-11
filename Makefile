@@ -6,7 +6,7 @@
 #    By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/12 17:54:45 by rde-fari          #+#    #+#              #
-#    Updated: 2026/02/11 10:56:01 by rde-fari         ###   ########.fr        #
+#    Updated: 2026/02/11 18:41:27 by rde-fari         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,8 +20,8 @@ SANITIZERS  = -fsanitize=address
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98 -g3
 SRC_DIR     = src
 OBJ_DIR     = obj
-INC_DIR     = include
-INCLUDES    = -I $(INC_DIR)
+INC_DIR     = inc
+INCLUDES    = -I $(INC_DIR)/
 SRCS        = $(shell find $(SRC_DIR) -name "*.cpp")
 OBJS        = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
