@@ -1,0 +1,161 @@
+@startuml
+skinparam diagramMargin 50
+skinparam packageMargin 20
+
+actor "Client" as C
+participant "ConnectionHandler\n(Server)" as S
+
+box "CommandModule / Services"
+  participant "CommandProcessor" as CP
+  participant "BaseCommand" as BC
+  participant "JoinCommand" as JOIN
+  participant "PrivMsgCommand" as PM
+end box
+
+box "PersistenceModule / Repositories"
+  participant "UserRepository" as UR
+  participant "ChannelRepository" as CR
+end box
+
+box "PersistenceModule / Models"
+  participant "User" as U
+  participant "Channel" as CH
+end box
+
+participant "MessagePayload" as MP
+
+== 1) Connect ==
+C -> S : TCP connect()
+S -> UR : createUser(fd, username="", password="")
+UR --> S : true
+
+note right of UR
+usersByFileDescriptor[fd] = User{fd,...}
+usersByUsername ainda vazio
+end note
+
+== 2) PASS (opcional) ==
+C -> S : "PASS hunter2\r\n"
+S -> S : parse raw -> MessagePayload
+S -> MP : rawMessage="PASS hunter2"
+S -> MP : tokenizedMessage=["PASS","hunter2"]
+
+S -> CP : executeCommand(fd, MP)
+
+note right of CP
+Pseudo:
+cmd = upper(payload.tokenizedMessage[0])
+it = commands.find(cmd)
+if it == end -> ERR_UNKNOWNCOMMAND
+else it->second.execute(fd,payload)
+end note
+
+CP -> UR : findUserByFileDescriptor(fd)
+UR --> CP : U
+
+CP --> S : OK/ERR (ex.: set password em U)
+S --> C : server reply
+
+== 3) NICK/USER (simplificado) ==
+C -> S : "NICK drigo\r\n"
+S -> S : parse -> MP(tokens=["NICK","drigo"])
+S -> CP : executeCommand(fd, MP)
+CP -> UR : findUserByFileDescriptor(fd)
+UR --> CP : U
+note right of UR
+Em algum comando de registo:
+- validar username
+- usersByUsername["drigo"] = U
+end note
+CP --> S : OK
+S --> C : server reply
+
+== 4) JOIN #42porto ==
+C -> S : "JOIN #42porto\r\n"
+S -> S : parse -> MP(tokens=["JOIN","#42porto"])
+S -> CP : executeCommand(fd, MP)
+
+CP -> JOIN : execute(fd, MP)
+
+JOIN -> UR : findUserByFileDescriptor(fd)
+UR --> JOIN : U
+
+JOIN -> CR : exists("#42porto")?
+CR --> JOIN : false
+
+JOIN -> CR : createChannel("#42porto")
+CR --> JOIN : true
+
+JOIN -> CR : findChannelByChannelName("#42porto")
+CR --> JOIN : CH
+
+note right of JOIN
+Pseudo (JoinCommand):
+channelName = tokens[1]
+user = UR.findUserByFD(fd)
+if !CR.exists(channelName): CR.createChannel(channelName)
+channel = CR.findChannelByName(channelName)
+validar policies: inviteOnly, password, maxUsers
+channel.usersInChannel.push_back(user)
+end note
+
+JOIN -> CH : add user to usersInChannel
+CH --> JOIN : ok
+
+JOIN --> CP : OK
+CP --> S : reply/notifications
+S --> C : ":server JOIN #42porto"
+
+== 5) PRIVMSG #42porto :ola ==
+C -> S : "PRIVMSG #42porto :ola pessoal\r\n"
+S -> S : parse -> MP(tokens=["PRIVMSG","#42porto",":ola pessoal"])
+S -> CP : executeCommand(fd, MP)
+
+CP -> PM : execute(fd, MP)
+
+PM -> UR : findUserByFileDescriptor(fd)
+UR --> PM : U
+
+PM -> CR : findChannelByChannelName("#42porto")
+CR --> PM : CH
+
+note right of PM
+Pseudo (PrivMsgCommand):
+target = tokens[1]
+msg = join(tokens[2..])
+user = UR.findUserByFD(fd)
+
+if target startsWith "#":
+  channel = CR.findChannelByName(target)
+  for each member in channel.usersInChannel:
+     if member.fd != user.fd:
+        send(member.fd, ":"+user.nick+" PRIVMSG "+target+" "+msg)
+else:
+  other = UR.findUserByUsername(target)
+  send(other.fd, ":"+user.nick+" PRIVMSG "+target+" "+msg)
+end note
+
+PM -> CH : iterate usersInChannel\n(broadcast)
+CH --> PM : ok
+
+PM --> CP : OK
+CP --> S : delivered
+S --> C : (optional ack/echo)
+
+== 6) QUIT ==
+C -> S : "QUIT :bye\r\n"
+S -> S : parse -> MP(tokens=["QUIT",":bye"])
+S -> CP : executeCommand(fd, MP)
+
+CP -> UR : removeUserByFd(fd)
+UR --> CP : true
+
+note right of CP
+Ideal:
+- remover user de todos os channels
+- se channel ficar vazio: CR.removeChannel(name)
+end note
+
+CP --> S : OK
+S -> C : close()
+@enduml
