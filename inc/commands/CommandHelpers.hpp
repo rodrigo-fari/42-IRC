@@ -3,9 +3,14 @@
 
 #include <string>
 #include <vector>
+#include "repositories/UserRepository.hpp"
 
-#include "../commands/Channel.hpp"
+#include "Channel.hpp"
 
+
+//!(from Rod) Hex chat by default ja manda tudo com o \r\n, nao precisa adicionar.
+//! Mesmo que nao seja pelo hex, quando nos conectamos no servidor com 'nc -C etc.'
+//! essa flag serve para que cada enter seja '\r\n' envez de '\n'.
 static inline void sendTo(User& u, const std::string& line) {
 	u.enqueue(line + "\r\n");
 }

@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/12 20:23:12 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/12 23:19:55 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 
 //Debug function. (while commands are not ready yet).
-static std::string payloadParamsToString(messagePayload payload)
+static std::string payloadParamsToString(MessagePayload payload)
 {
 	std::string singleParamsString;
 	if (payload.command != "PING")
@@ -36,7 +36,7 @@ static std::string itoa(int nbr)
 	return (str);
 }
 
-std::string dispatch(int fd, const messagePayload& payload)
+std::string dispatch(int fd, const MessagePayload& payload)
 {
 	std::string fdStr = "Solicitor: " + itoa(fd);
 	std::string cmd = payload.command;

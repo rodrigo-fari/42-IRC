@@ -1,23 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Dispatcher.hpp                                     :+:      :+:    :+:   */
+/*   BaseCommand.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/02/11 21:40:52 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/12 23:19:55 by rde-fari         ###   ########.fr       */
+/*   Created: 2026/02/12 23:49:39 by rde-fari          #+#    #+#             */
+/*   Updated: 2026/02/12 23:52:59 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include <iostream>
-#include <map>
-#include <vector>
-#include <string>
-#include <cctype>
+#include "repositories/UserRepository.hpp"
+#include "repositories/ChannelRepository.hpp"
 #include "parser/IrcParser.hpp"
-#include <sstream>
 
-std::string dispatch(int fd, const MessagePayload& payload);
+class BaseCommand
+{
+	private:
+		UserRepository& userRepository;
+		ChannelRepository& channelRepository;
+
+	public:
+		void execute(int fd, MessagePayload payload);
+
+};

@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 14:46:20 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/11 18:44:58 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/12 23:19:55 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,9 +45,9 @@ static std::vector<std::string> getArgs(const std::string& line, size_t& i)
 	return (args);
 }
 
-messagePayload parseMessage(const std::string& line)
+MessagePayload parseMessage(const std::string& line)
 {
-	messagePayload payload;
+	MessagePayload payload;
 	size_t i = 0;
 
 	while (i < line.size() && line[i] == ' ')
