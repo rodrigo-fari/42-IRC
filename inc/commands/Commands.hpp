@@ -1,16 +1,15 @@
-#ifndef COMMANDS_HPP
-#define COMMANDS_HPP
 
-#include <string>
-#include <vector>
+#pragma once
 
-struct ServerState;
-class User;
+#include "commands/CommandDispatcher.hpp"
+#include "commands/CommandContext.hpp"
+#include "commands/MessagePayload.hpp"
+#include "commands/NumericReplies.hpp"
 
-// JOIN params "#chan", "channelPassword"
-void handleJoin(ServerState& st, User& client, const std::vector<std::string>& params);
-
-// PART params "#chan"(sem ":")
-void handlePart(ServerState& st, User& client, const std::vector<std::string>& params, const std::string& trailing);
-
-#endif
+#include "commands/handlers/Pass.hpp"
+#include "commands/handlers/Nick.hpp"
+#include "commands/handlers/User.hpp"
+#include "commands/handlers/Ping.hpp"
+#include "commands/handlers/Quit.hpp"
+#include "commands/handlers/PrivMsg.hpp"
+#include "commands/handlers/Notice.hpp"
