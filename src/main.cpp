@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/core/Core.hpp"
+#include "../inc/core/Server.hpp"
 
 int main(int argc, char **argv)
 {

@@ -24,7 +24,27 @@
 # include <limits>
 # include <sstream>
 
+
+
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <fcntl.h>
+#include <netdb.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <set>
+#include <map>
+
+
 # include "../colors/Colors.hpp"
-# include "../network/Network.hpp"
+
 
 #endif
