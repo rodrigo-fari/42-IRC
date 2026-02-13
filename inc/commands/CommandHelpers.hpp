@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "repositories/UserRepository.hpp"
+#include "core/UserRepository.hpp"
 
 #include "Channel.hpp"
 

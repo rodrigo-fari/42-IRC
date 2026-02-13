@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/12 23:27:43 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/12 23:37:17 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/13 00:06:19 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "repositories/UserRepository.hpp"
+#include "core/UserRepository.hpp"
 
 struct Channel
 {
