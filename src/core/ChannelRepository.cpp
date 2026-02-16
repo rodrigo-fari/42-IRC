@@ -1,23 +1,33 @@
-#include "../../inc/commands/ChannelRepository.hpp"
+#include "../../inc/core/ChannelRepository.hpp"
 
-Channel* ChannelRepository::findChannelByChannelName(const std::string& channelName) {
-	std::map<std::string, Channel>::iterator it = channelsByChannelName.find(channelName);
-	if (it == channelsByChannelName.end()) return 0;
-	return &it->second;
+// retorna ponteiro pro canal real
+Channel* ChannelRepository::findChannelByChannelName(const std::string& channelName)
+{
+    std::map<std::string, Channel>::iterator it = channelsByName.find(channelName);
+    if (it == channelsByName.end()) return 0;
+    return &it->second;
 }
 
-bool ChannelRepository::exists(const std::string& channelName) const {
-	return channelsByChannelName.find(channelName) != channelsByChannelName.end();
+// checa se tem no map
+bool ChannelRepository::doesChannelExists(const std::string& channelName) const
+{
+    return channelsByName.find(channelName) != channelsByName.end();
 }
 
-bool ChannelRepository::createChannel(const std::string& channelName) {
-	if (exists(channelName)) return false;
-	channelsByChannelName[channelName] = Channel(channelName);
-	return true;
+// cria entrada no map com defaults
+bool ChannelRepository::createChannel(const std::string& channelName)
+{
+    if (doesChannelExists(channelName)) return false;
+
+    // usa construtor Channel(channelName)
+    channelsByName[channelName] = Channel(channelName);
+    return true;
 }
 
-bool ChannelRepository::removeChannel(const std::string& channelName) {
-	if (!exists(channelName)) return false;
-	channelsByChannelName.erase(channelName);
-	return true;
+// apaga do map
+bool ChannelRepository::removeChannel(const std::string& channelName)
+{
+    if (!doesChannelExists(channelName)) return false;
+    channelsByName.erase(channelName);
+    return true;
 }

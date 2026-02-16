@@ -18,11 +18,15 @@
 
 class BaseCommand
 {
-	private:
-		UserRepository& userRepository;
-		ChannelRepository& channelRepository;
+protected:
+    UserRepository& userRepository;
+    ChannelRepository& channelRepository;
 
-	public:
-		void execute(int fd, MessagePayload payload);
+public:
+    BaseCommand(UserRepository& ur, ChannelRepository& cr)
+        : userRepository(ur), channelRepository(cr) {}
 
+    virtual ~BaseCommand() {}
+
+    virtual void execute(int fd, const MessagePayload& payload) = 0;
 };

@@ -12,28 +12,34 @@
 
 #pragma once
 
-
 #include <string>
 #include <map>
-#include "parser/IrcParser.hpp"
+#include <vector>
 
 struct User
 {
-	int fileDescriptor;
-	std::string username;
-	std::string password;
+    int fileDescriptor;
+    std::string username;
+    std::string password;
+
+    std::vector<std::string> outbox;
+
+    void enqueue(const std::string& msg) {
+        outbox.push_back(msg);
+    }
 };
 
 class UserRepository
 {
-	private:
-		std::map<std::string, User> usersByUsername;
-		std::map<int, User> usersByFileDescriptor;
+private:
+    std::map<std::string, User> usersByUsername;
+    std::map<int, User> usersByFileDescriptor;
 
-	public:
-		User findUserByUsername(std::string username);
-		User findUserByFileDescriptor(int fd);
-		bool createUser(int fd, std::string username, std::string password);
-		bool removeUserByUsername(std::string username);
-		bool removeUserByFileDescriptor(int fd);
+public:
+    User* findUserByUsername(const std::string& username);
+    User* findUserByFileDescriptor(int fd);
+
+    bool createUser(int fd, const std::string& username, const std::string& password);
+    bool removeUserByUsername(const std::string& username);
+    bool removeUserByFileDescriptor(int fd);
 };

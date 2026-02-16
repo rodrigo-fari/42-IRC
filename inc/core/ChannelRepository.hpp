@@ -12,27 +12,18 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
 #include <map>
-#include "core/UserRepository.hpp"
-
-struct Channel
-{
-	std::vector<User&> usersInChannel;
-	std::string channelPassword;
-	bool inviteOnlyPolicy;
-	int maxUsersAmount;
-};
+#include <string>
+#include "commands/Channel.hpp"
 
 class ChannelRepository
 {
-	private:
-		std::map<std::string, Channel> channelsByName;
+private:
+    std::map<std::string, Channel> channelsByName;
 
-	public:
-		Channel findChannelbyChannelName(std::string);
-		bool createChannel(std::string channelName);
-		bool doesChannelExists(std::string channelName);
-		bool removeChannel(std::string channelName);
+public:
+    Channel* findChannelByChannelName(const std::string& channelName);
+    bool createChannel(const std::string& channelName);
+    bool doesChannelExists(const std::string& channelName) const;
+    bool removeChannel(const std::string& channelName);
 };

@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "core/Core.hpp"
+//#include "core/Core.hpp"
 #include "network/IrcMessageFramer.hpp"
 #include "parser/IrcParser.hpp"
 

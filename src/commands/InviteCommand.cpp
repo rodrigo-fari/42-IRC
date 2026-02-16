@@ -1,27 +1,26 @@
-#include "../../inc/commands/Commands.hpp"
-#include "../../inc/commands/Channel.hpp"
-#include "../../inc/commands/ChannelRepository.hpp"
 #include "../../inc/commands/InviteCommand.hpp"
+#include "../../inc/commands/Channel.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 
 void InviteCommand::execute(int fd, const MessagePayload& payload) {
     User* inviter = userRepository.findUserByFileDescriptor(fd);
     if (!inviter) return;
 
+    ClientState& state = clientStateRepository.getClientStatus(fd);
+
     // precisa estar registrado
-    if (!inviter->isRegistered) {
+    if (!state.isRegistered) {
         sendTo(*inviter, ":" + serverName + " 451 " + inviter->username + " :You have not registered");
         return;
     }
 
-    // precisa de params
-    if (payload.tokenizedMessage.size() < 3) {
+    if (payload.params.size() < 3) {
         sendTo(*inviter, ":" + serverName + " 461 " + inviter->username + " INVITE :Not enough parameters");
         return;
     }
 
-    std::string targetNick = payload.tokenizedMessage[1];
-    std::string channelName = payload.tokenizedMessage[2];
+    std::string targetNick = payload.params[1];
+    std::string channelName = payload.params[2];
 
     // canal existe?
     Channel* ch = channelRepository.findChannelByChannelName(channelName);
@@ -36,7 +35,7 @@ void InviteCommand::execute(int fd, const MessagePayload& payload) {
         return;
     }
 
-    //só OP pode convidar
+    // so OP pode convidar
     if (!ch->isChannelOperator(inviter->fileDescriptor)) {
         sendTo(*inviter, ":" + serverName + " 482 " + inviter->username + " " + channelName + " :You're not channel operator");
         return;
@@ -59,7 +58,6 @@ void InviteCommand::execute(int fd, const MessagePayload& payload) {
     ch->inviteUser(target->fileDescriptor);
 
     // avisa o alvo
-    //inviter INVITE target #chan
     sendTo(*target, prefix(*inviter) + " INVITE " + targetNick + " " + channelName);
 
     // confirma pro inviter

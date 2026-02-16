@@ -14,6 +14,7 @@
 
 std::string dispatch(int fd, const MessagePayload& payload)
 {
+	(void)fd;
 	std::string cmd = payload.command;
 	for (size_t i = 0; i < cmd.length(); i++)
 		cmd[i] = toupper(cmd[i]);
