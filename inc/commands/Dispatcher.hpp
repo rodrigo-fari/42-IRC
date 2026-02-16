@@ -1,28 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Core.hpp                                           :+:      :+:    :+:   */
+/*   Dispatcher.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/12 17:52:33 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/01/12 17:57:20 by rde-fari         ###   ########.fr       */
+/*   Created: 2026/02/11 21:40:52 by rde-fari          #+#    #+#             */
+/*   Updated: 2026/02/12 23:19:55 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CORE_HPP
-# define CORE_HPP
+#pragma once
 
-# include <string>
-# include <iostream>
-# include <istream>
-# include <cstdlib>
-# include <cctype>
-# include <cmath>
-# include <ctime>
-# include <exception>
-# include <limits>
-# include <sstream>
-# include "../colors/Colors.hpp"
+#include <iostream>
+#include <map>
+#include <vector>
+#include <string>
+#include <cctype>
+#include "parser/IrcParser.hpp"
+#include <sstream>
 
-#endif
+std::string dispatch(int fd, const MessagePayload& payload);
