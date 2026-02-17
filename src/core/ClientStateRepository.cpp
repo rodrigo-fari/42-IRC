@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/17 13:18:32 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 14:29:53 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 16:54:33 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,5 +31,4 @@ ClientState& ClientStateRepository::getClientStatus(int fd)
 void ClientStateRepository::remove(int fd)
 {
 	status.erase(fd);
-	debugMessage("[fd removed]: " + fd);
 }

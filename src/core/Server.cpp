@@ -1,5 +1,7 @@
 #include "../../inc/core/Server.hpp"
-
+#include "network/IrcMessageFramer.hpp"
+#include "parser/IrcParser.hpp"
+#include "commands/Dispatcher.hpp"
 
 Server::Server(const std::string &port) : port(port), serverSocket(-1) {}
 
@@ -240,36 +242,46 @@ void Server::run()
 						std::cout << "[NETWORK] receiveData returned: " << bitesRead << std::endl;
 					if (bitesRead > 0)
 					{
-						reader.inBuffer.append(buffer, buffer + bitesRead);
-						while (true)
+						IrcMessageFramer processor;
+						std::vector<std::string> returnFramerVector;
+						MessagePayload payload;
+						std::string rawData;
+
+						rawData = reader.inBuffer.append(buffer, buffer + bitesRead);
+						returnFramerVector = processor.processRawData(fd, rawData);
+						for (size_t i = 0; i < returnFramerVector.size(); i++)
 						{
-							std::string line;
-							size_t pos = reader.inBuffer.find("\r\n");
-							if (pos != std::string::npos)
-							{
-								line = reader.inBuffer.substr(0, pos);
-								reader.inBuffer.erase(0, pos + 2);
-							}
-							else
-							{
-								pos = reader.inBuffer.find('\n');
-								if (pos == std::string::npos)
-									break;
-								line = reader.inBuffer.substr(0, pos);
-								reader.inBuffer.erase(0, pos + 1);
-							}
-							std::cout << "[RECEIVED] fd=" << fd << " line: " << line << "\n";
-							std::string normalizedLine;
-							if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
-								normalizedLine = line;
-							else if (!line.empty() && line[line.size() - 1] == '\n')
-								normalizedLine = line.substr(0, line.size() - 1) + "\r\n";
-							else
-								normalizedLine = line + "\r\n";
-							reader.outBuffer += "ECHO: " + normalizedLine;
-							set_pollout_for_fd(pollset, fd);
+							payload = parseMessage(returnFramerVector[i]);
+							reader.outBuffer = dispatch(fd, payload);
 						}
-						continue;
+						set_pollout_for_fd(pollset, fd);
+						// while (true)
+						// {
+						// 	std::string line;
+						// 	size_t pos = reader.inBuffer.find("\r\n");
+						// 	if (pos != std::string::npos)
+						// 	{
+						// 		line = reader.inBuffer.substr(0, pos);
+						// 		reader.inBuffer.erase(0, pos + 2);
+						// 	}
+						// 	else
+						// 	{
+						// 		pos = reader.inBuffer.find('\n');
+						// 		if (pos == std::string::npos)
+						// 			break;
+						// 		line = reader.inBuffer.substr(0, pos);
+						// 		reader.inBuffer.erase(0, pos + 1);
+						// 	}
+						// 	std::cout << "[RECEIVED] fd=" << fd << " line: " << line << "\n";
+						// 	std::string normalizedLine;
+						// 	if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
+						// 		normalizedLine = line;
+						// 	else if (!line.empty() && line[line.size() - 1] == '\n')
+						// 		normalizedLine = line.substr(0, line.size() - 1) + "\r\n";
+						// 	else
+						// 		normalizedLine = line + "\r\n";
+						// 	reader.outBuffer += "ECHO: " + normalizedLine;
+						// }
 					}
 					if (bitesRead == 0)
 					{
