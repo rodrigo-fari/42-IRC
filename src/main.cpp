@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	// 	std::cout << "[Input]= " << a << "\n";
 	// 	MP = parseMessage(a);
 	// 	std::cout << "[Command]= " << MP.command << "\n";
-	// 	for(size_t i = 0; i < MP.params.size(); i++)
+	// 	for(size_t i =gitcheckout  0; i < MP.params.size(); i++)
 	// 		std::cout << "[Param: " << i << "]= " << MP.params.at(i) << "\n";
 
 	// 	std::cout << "\n";

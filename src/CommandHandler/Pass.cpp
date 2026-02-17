@@ -14,7 +14,8 @@
 
 std::string handlePass(int fd, const MessagePayload& payload)
 {
-	(void)fd;
-	(void)payload;
+	(void)fd; // Avoid unused parameter warning
+	(void)payload; // Avoid unused parameter warning
+	
 	return ("");
 }
