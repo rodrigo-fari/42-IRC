@@ -1,31 +1,3 @@
-<<<<<<< HEAD
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2026/01/12 17:54:45 by rde-fari          #+#    #+#              #
-#    Updated: 2026/01/16 22:18:25 by rde-fari         ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
-
-# ==============================================================================
-# VARIABLES & PATHS
-# VARIABLES & PATHS
-# ==============================================================================
-MAKEFLAGS	+= --silent
-NAME        = ircserv
-CXX         = c++
-CXXFLAGS    = -Wall -Wextra -Werror -std=c++98 -g3 -fsanitize=address
-SRC_DIR     = src
-OBJ_DIR     = obj
-INC_DIR     = include
-INCLUDES    = -I $(INC_DIR)
-SRCS        = $(shell find $(SRC_DIR) -name "*.cpp")
-OBJS        = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
-=======
 # Flags & Variables
 MAKEFLAGS += -s
 NAME = ircserv
@@ -41,7 +13,6 @@ OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 TOTAL_FILES := $(words $(OBJ))
 COUNTER_FILE := $(OBJ_DIR)/.build_counter
 LOC_FILES := $(shell find $(SRC_DIR) $(INC_DIR) -type f \( -name "*.cpp" -o -name "*.hpp" \))
->>>>>>> origin/feature/Parser&Dispatch
 
 # Colors & Text Formatting
 RED				= \033[0;31m

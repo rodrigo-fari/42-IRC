@@ -39,7 +39,7 @@ class Channel {
 	// se ficar sem op, promove o mais antigo
 	int ensureAtLeastOneOperator();
 
-	//  Modes (ja prepara pro MODE depois
+	//  Modes ja prepara pro MODE depois
 	bool inviteOnlyPolicy;          // +i
 	bool topicLockPolicy;           // +t
 	bool hasChannelPassword;        // +k
