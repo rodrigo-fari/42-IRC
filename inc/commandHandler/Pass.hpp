@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/15 17:51:33 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/15 17:58:38 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 14:18:31 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 #include <string>
 #include <map>
+#include <core/DEBUG.hpp>
 #include <iostream>
 #include "parser/IrcParser.hpp"
 

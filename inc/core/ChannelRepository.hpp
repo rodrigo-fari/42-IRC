@@ -6,13 +6,14 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/12 23:27:43 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/13 00:06:19 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 14:18:31 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <map>
+#include <core/DEBUG.hpp>
 #include <string>
 #include "commands/Channel.hpp"
 
