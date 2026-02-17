@@ -31,5 +31,4 @@ ClientState& ClientStateRepository::getClientStatus(int fd)
 void ClientStateRepository::remove(int fd)
 {
 	status.erase(fd);
-	debugMessage("[fd removed]: " + fd);
 }

@@ -14,7 +14,6 @@
 
 #include <string>
 #include <map>
-#include <core/DEBUG.hpp>
 #include <iostream>
 #include "parser/IrcParser.hpp"
 

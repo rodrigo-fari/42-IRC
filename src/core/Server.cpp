@@ -151,13 +151,7 @@ void Server::run()
 	std::cout << "[SERVER] listening on port " << port << "\n";
 	while (true)
 	{
-		if (DEBUG)
-			std::cout << "[NETWORK] Entering event loop" << std::endl;
 		const int n = poll(&pollset.pfds[0], pollset.pfds.size(), -1);
-		if (DEBUG)
-			std::cout << "[NETWORK] poll() returned: " << n << std::endl;
-		// for (size_t j = 0; j < pollset.pfds.size(); ++j)
-		// 	if (DEBUG) std::cout << "[NETWORK] fd=" << pollset.pfds[j].fd << " events=" << pollset.pfds[j].events << " revents=" << pollset.pfds[j].revents << std::endl;
 		if (n < 0)
 		{
 			if (errno == EINTR)
@@ -165,8 +159,6 @@ void Server::run()
 			perror("poll");
 			break;
 		}
-		if (DEBUG)
-			std::cout << "[NETWORK] Starting event handling loop" << std::endl;
 		std::size_t i = 0;
 		while (i < pollset.pfds.size())
 		{
@@ -174,23 +166,8 @@ void Server::run()
 			const int fd = pollset.pfds[i].fd;
 			const short re = pollset.pfds[i].revents;
 			pollset.pfds[i].revents = 0;
-			if (DEBUG)
-				std::cout << "[NETWORK] Handling fd=" << fd << " re=" << re << std::endl;
-			// if (re & POLLERR)
-			// {
-			// 	if (DEBUG) std::cout << "[NETWORK] POLLERR event on fd=" << fd << std::endl;
-			// 	if (fd == serverSocket.getSocketFd())
-			// 	{
-			// 		if (DEBUG) std::cout << "[NETWORK] POLLERR on listener socket! errno=" << errno << " (" << strerror(errno) << ")" << std::endl;
-			// 		if (DEBUG) std::cout << "[NETWORK] Shutting down event loop due to listener error." << std::endl;
-			// 		running = false;
-			// 		break;
-			// 	}
-			// }
 			if (re == 0)
 			{
-				if (DEBUG)
-					std::cout << "[NETWORK] No events for fd=" << fd << std::endl;
 				i++;
 				continue;
 			}
@@ -202,12 +179,8 @@ void Server::run()
 				while (true)
 				{
 					int client_fd = serverSocket.acceptConnection();
-					if (DEBUG)
-						std::cout << "[NETWORK] acceptConnection returned fd=" << client_fd << std::endl;
 					if (client_fd < 0)
 					{
-						if (DEBUG)
-							std::cout << "[NETWORK] acceptConnection failed, errno=" << errno << std::endl;
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 							break;
 						perror("accept");
@@ -236,8 +209,6 @@ void Server::run()
 				while (true)
 				{
 					const ssize_t bitesRead = reader.socket.receiveData(buffer, sizeof(buffer));
-					if (DEBUG)
-						std::cout << "[NETWORK] receiveData returned: " << bitesRead << std::endl;
 					if (bitesRead > 0)
 					{
 						reader.inBuffer.append(buffer, buffer + bitesRead);
@@ -278,11 +249,8 @@ void Server::run()
 						break;
 					}
 					if (errno == EAGAIN || errno == EWOULDBLOCK)
-					{
-						if (DEBUG)
-							std::cout << "[NETWORK] receiveData would block for fd=" << fd << std::endl;
 						break;
-					}
+					
 				}
 			}
 			// HANDLING SEND FROM SERVER TO CLIENT
