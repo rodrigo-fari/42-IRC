@@ -6,21 +6,23 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/12 17:51:56 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/15 14:38:24 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 16:42:49 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 //#include "core/Core.hpp"
 #include "network/IrcMessageFramer.hpp"
 #include "parser/IrcParser.hpp"
+#include "../inc/core/Server.hpp"
 
 int main(int argc, char **argv)
 {
-	{
-		std::cout << "HelloWorld" << std::endl;
-		return (0);
-	}
-	
+	const std::string port = (argc >= 2) ? argv[1] : "6667";
+	Server server(port);
+
+	server.init();
+	return 0;
+
 	// {
 	// 	(void)argc;
 	// 	(void)argv;
