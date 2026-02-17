@@ -1,36 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ClientStateRepository.hpp                          :+:      :+:    :+:   */
+/*   DEBUG.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/02/13 00:07:30 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 14:18:31 by rde-fari         ###   ########.fr       */
+/*   Created: 2026/02/17 14:17:28 by rde-fari          #+#    #+#             */
+/*   Updated: 2026/02/17 14:25:01 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include <map>
-#include <core/DEBUG.hpp>
-#include <utility>
+#include <string>
 #include <iostream>
+#include <Colors.hpp>
 
-struct ClientState
-{
-	bool isRegistered;
-	bool hasNickname;
-	bool hasUsername;
-	bool hasPassword;
-};
-
-class ClientStateRepository
-{
-	private:
-		std::map<int, ClientState> status;
-
-	public:
-		ClientState& getClientStatus(int fd);
-		void remove(int fd);
-};
+void debugMessage(std::string message);

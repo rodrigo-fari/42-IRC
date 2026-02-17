@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/15 18:10:19 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 15:31:29 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,9 +25,4 @@ std::string dispatch(int fd, const MessagePayload& payload)
 		return ("PONG\r\n");
 	}
 	return ("");
-}
-
-std::string handlePingCommand()
-{
-	
 }

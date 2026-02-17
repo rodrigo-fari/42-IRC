@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/12 23:49:39 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/13 00:06:19 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 12:41:19 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,14 +19,14 @@
 class BaseCommand
 {
 protected:
-    UserRepository& userRepository;
-    ChannelRepository& channelRepository;
+	UserRepository& userRepository;
+	ChannelRepository& channelRepository;
 
 public:
-    BaseCommand(UserRepository& ur, ChannelRepository& cr)
-        : userRepository(ur), channelRepository(cr) {}
+	BaseCommand(UserRepository& ur, ChannelRepository& cr)
+		: userRepository(ur), channelRepository(cr) {}
 
-    virtual ~BaseCommand() {}
+	virtual ~BaseCommand() {}
 
-    virtual void execute(int fd, const MessagePayload& payload) = 0;
+	virtual void execute(int fd, const MessagePayload& payload) = 0;
 };

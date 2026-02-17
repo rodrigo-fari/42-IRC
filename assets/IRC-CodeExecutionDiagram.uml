@@ -1,0 +1,207 @@
+@startuml
+skinparam diagramMargin 50
+skinparam packageMargin 20
+
+actor "IRC Client" as C
+
+participant "main()\n(boot)" as MAIN
+participant "Server\n(Core Loop)" as S
+participant "poll()" as P
+
+box "Network Layer"
+  participant "acceptNewClient()" as ACC
+  participant "recv(fd)" as RCV
+  participant "IrcMessageFramer" as F
+  participant "send(fd)" as SND
+end box
+
+box "Parser Layer"
+  participant "IrcParser" as PAR
+  participant "MessagePayload" as MP
+end box
+
+box "Command Layer"
+  participant "Dispatcher\n(or CommandProcessor)" as D
+  participant "PASS handler" as HPASS
+  participant "NICK handler" as HNICK
+  participant "USER handler" as HUSER
+  participant "JOIN handler" as HJOIN
+  participant "PRIVMSG handler" as HMSG
+  participant "QUIT handler" as HQUIT
+end box
+
+box "State / Persistence"
+  participant "ClientStateRepository" as CSR
+  participant "UserRepository" as UR
+  participant "ChannelRepository" as CR
+  participant "User" as U
+  participant "Channel" as CH
+end box
+
+== 0) Boot ==
+MAIN -> S : start(port, password)
+note right of S
+- cria socket listen
+- set non-blocking
+- setsockopt
+- bind/listen
+- prepara pollfd list (listen fd + clients)
+- guarda serverPassword
+end note
+
+== 1) Connect / Accept ==
+C -> S : TCP connect()
+S -> P : poll(listen + clients)
+P --> S : listen fd readable
+S -> ACC : acceptNewClient()
+ACC --> S : new fd
+
+S -> UR : createUser(fd, "", "")
+UR --> S : true
+S -> CSR : getClientStatus(fd)
+CSR --> S : ClientState{all false}
+
+note right of S
+server adiciona fd no poll list
+end note
+
+== 2) Receive bytes -> Framer -> Parser -> Dispatch ==
+C -> S : sends bytes (could be partial)
+S -> P : poll(...)
+P --> S : fd readable
+
+S -> RCV : recv(fd)
+RCV --> S : raw bytes
+
+S -> F : append(fd, bytes)
+note right of F
+Framer mantém buffer por fd
+e extrai linhas completas por "\r\n"
+suporta fragmentação e múltiplos comandos
+end note
+
+F --> S : lines[] (0..N linhas completas)
+
+loop for each line in lines
+  S -> PAR : parseMessage(line)
+  PAR --> S : MessagePayload{command, params, trailing...}
+
+  S -> D : dispatch(fd, payload, CSR, UR, CR, serverPassword)
+
+  alt command == PASS
+    D -> HPASS : execute(fd, payload)
+    HPASS -> CSR : getClientStatus(fd)
+    CSR --> HPASS : st
+    HPASS -> UR : findUserByFileDescriptor(fd)
+    UR --> HPASS : U*
+    HPASS --> D : reply string OR enqueue
+  else command == NICK
+    D -> HNICK : execute(fd, payload)
+    HNICK -> CSR : getClientStatus(fd)
+    CSR --> HNICK : st
+    HNICK -> UR : update user nick (ou username map)
+    UR --> HNICK : ok/err
+    HNICK --> D : reply/enqueue
+  else command == USER
+    D -> HUSER : execute(fd, payload)
+    HUSER -> CSR : getClientStatus(fd)
+    CSR --> HUSER : st
+    HUSER -> UR : update user username/realname
+    UR --> HUSER : ok/err
+    HUSER --> D : reply/enqueue
+  else unknown
+    D --> S : ERR_UNKNOWNCOMMAND (string)
+  end
+
+  D --> S : reply string (optional)
+  alt reply != ""
+    S -> UR : findUserByFileDescriptor(fd)
+    UR --> S : U*
+    S -> U : enqueue(reply)
+  end
+end
+
+== 3) Flush outbox on POLLOUT ==
+S -> P : poll(...)
+P --> S : fd writable (POLLOUT)
+
+S -> UR : findUserByFileDescriptor(fd)
+UR --> S : U*
+S -> SND : flush(U.outbox) with partial sends
+note right of SND
+- tenta enviar
+- se send parcial: mantém resto no outbox
+- não bloqueia
+end note
+
+== 4) JOIN #channel ==
+C -> S : "JOIN #42porto\r\n"
+S -> P : poll -> readable
+S -> RCV : recv(fd)
+S -> F : append -> lines[]
+S -> PAR : parseMessage("JOIN #42porto")
+S -> D : dispatch(...)
+
+D -> HJOIN : execute(fd, payload)
+HJOIN -> CSR : getClientStatus(fd)
+CSR --> HJOIN : st
+
+note right of HJOIN
+se !st.isRegistered -> erro
+end note
+
+HJOIN -> UR : findUserByFileDescriptor(fd)
+UR --> HJOIN : U*
+HJOIN -> CR : exists("#42porto")?
+CR --> HJOIN : false
+HJOIN -> CR : createChannel("#42porto")
+CR --> HJOIN : true
+HJOIN -> CR : findChannelByChannelName("#42porto")
+CR --> HJOIN : CH*
+
+HJOIN -> CH : addMember(fd) / usersInChannel.push_back(User&)
+CH --> HJOIN : ok
+
+HJOIN --> D : notify strings (JOIN + names/topic etc.)
+D --> S : reply(s)
+S -> U : enqueue(replies)
+S -> P : later POLLOUT -> flush
+
+== 5) PRIVMSG #channel :msg ==
+C -> S : "PRIVMSG #42porto :ola pessoal\r\n"
+S -> ... : recv -> framer -> parser -> dispatch
+
+D -> HMSG : execute(fd, payload)
+HMSG -> CSR : getClientStatus(fd)
+CSR --> HMSG : st
+HMSG -> UR : findUserByFileDescriptor(fd)
+UR --> HMSG : U*
+HMSG -> CR : findChannelByChannelName("#42porto")
+CR --> HMSG : CH*
+
+HMSG -> CH : list members
+loop for each member in CH
+  HMSG -> UR : findUserByFileDescriptor(memberFd)
+  UR --> HMSG : U_member*
+  HMSG -> U_member : enqueue(":"+U.nick+" PRIVMSG ...\r\n")
+end
+
+HMSG --> D : ok
+D --> S : (optional)
+
+== 6) QUIT / Disconnect ==
+C -> S : "QUIT :bye\r\n"
+S -> ... : recv -> framer -> parser -> dispatch
+
+D -> HQUIT : execute(fd, payload)
+HQUIT -> CR : remove fd from all channels\n(remove empty channels)
+HQUIT -> UR : removeUserByFileDescriptor(fd)
+UR --> HQUIT : true
+HQUIT -> CSR : remove(fd)
+CSR --> HQUIT : ok
+HQUIT --> D : ok
+
+D --> S : close(fd) + remove from poll list
+S --> C : TCP close()
+
+@enduml
