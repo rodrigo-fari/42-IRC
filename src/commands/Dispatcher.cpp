@@ -6,11 +6,11 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 17:52:12 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 21:34:34 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "commands/Dispatcher.hpp"
+#include "commandHandler/Dispatcher.hpp"
 
 std::string dispatch(int fd, const MessagePayload& payload)
 {

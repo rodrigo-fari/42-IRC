@@ -1,7 +1,7 @@
 #include "../../inc/core/Server.hpp"
-#include "network/IrcMessageFramer.hpp"
+#include "parser/IrcMessageFramer.hpp"
 #include "parser/IrcParser.hpp"
-#include "commands/Dispatcher.hpp"
+#include "commandHandler/Dispatcher.hpp"
 
 Server::Server(const std::string &port) : port(port), serverSocket(-1) {}
 
