@@ -1,11 +1,15 @@
 #pragma once
 
-#include <map>
-#include <vector>
-#include <cstdio>
+# include <map>
+# include <vector>
+# include <cstdio>
 # include "../network/Socket.hpp"
 # include "../network/Network.hpp"
+# include "../commands/Dispatcher.hpp"
 
+#ifndef DEBUG
+#define DEBUG 0 
+#endif
 
 class Server
 {
@@ -14,6 +18,10 @@ private:
 	Socket serverSocket;
 	std::map<int, Connection> connections;
 	PollSet pollset;
+		
+	IrcMessageFramer framer;
+	MessagePayload payload;
+
 
 public:
 	Server(const std::string &port);

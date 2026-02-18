@@ -211,36 +211,57 @@ void Server::run()
 					const ssize_t bitesRead = reader.socket.receiveData(buffer, sizeof(buffer));
 					if (bitesRead > 0)
 					{
+
 						reader.inBuffer.append(buffer, buffer + bitesRead);
-						while (true)
+						std::vector<std::string> lines = framer.processRawData(fd, reader.inBuffer);
+						for (size_t j = 0; j < lines.size(); ++j)
 						{
-							std::string line;
-							size_t pos = reader.inBuffer.find("\r\n");
-							if (pos != std::string::npos)
+							const std::string& normalizedLine = lines[j];
+							std::cout << "[RECEIVED] fd=" << fd << " line: " << normalizedLine << "\n";
+
+							payload = parseMessage(normalizedLine);
+							std::string responseLines = dispatch(fd, payload);
+							if (!responseLines.empty())
 							{
-								line = reader.inBuffer.substr(0, pos);
-								reader.inBuffer.erase(0, pos + 2);
+								std::cout << "[RESPONSE] fd=" << fd << " line: " << responseLines << "\n";
+								bool wasEmpty = reader.outBuffer.empty();
+								reader.outBuffer += responseLines;
+								if (wasEmpty)
+									set_pollout_for_fd(pollset, fd);
+								
+								
 							}
-							else
-							{
-								pos = reader.inBuffer.find('\n');
-								if (pos == std::string::npos)
-									break;
-								line = reader.inBuffer.substr(0, pos);
-								reader.inBuffer.erase(0, pos + 1);
-							}
-							std::cout << "[RECEIVED] fd=" << fd << " line: " << line << "\n";
-							std::string normalizedLine;
-							if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
-								normalizedLine = line;
-							else if (!line.empty() && line[line.size() - 1] == '\n')
-								normalizedLine = line.substr(0, line.size() - 1) + "\r\n";
-							else
-								normalizedLine = line + "\r\n";
-							reader.outBuffer += "ECHO: " + normalizedLine;
-							set_pollout_for_fd(pollset, fd);
 						}
 						continue;
+						// while (true)
+						// {
+						// 	std::string line;
+						// 	size_t pos = reader.inBuffer.find("\r\n");
+						// 	if (pos != std::string::npos)
+						// 	{
+						// 		line = reader.inBuffer.substr(0, pos);
+						// 		reader.inBuffer.erase(0, pos + 2);
+						// 	}
+						// 	else
+						// 	{
+						// 		pos = reader.inBuffer.find('\n');
+						// 		if (pos == std::string::npos)
+						// 			break;
+						// 		line = reader.inBuffer.substr(0, pos);
+						// 		reader.inBuffer.erase(0, pos + 1);
+						// 	}
+						// 	std::cout << "[RECEIVED] fd=" << fd << " line: " << line << "\n";
+						// 	std::string normalizedLine;
+						// 	if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
+						// 		normalizedLine = line;
+						// 	else if (!line.empty() && line[line.size() - 1] == '\n')
+						// 		normalizedLine = line.substr(0, line.size() - 1) + "\r\n";
+						// 	else
+						// 		normalizedLine = line + "\r\n";
+						// 	reader.outBuffer += "ECHO: " + normalizedLine;
+						// 	set_pollout_for_fd(pollset, fd);
+						// }
+						// continue;
 					}
 					if (bitesRead == 0)
 					{
