@@ -1,12 +1,11 @@
-# include "../network/Socket.hpp"
+# include "network/Socket.hpp"
+# include "network/IrcMessageFramer.hpp"
+#include "parser/IrcParser.hpp"
 #include <poll.h>
 #include <vector>
 #include <map>
 
 
-#ifndef DEBUG
-#define DEBUG 1
-#endif
 
 
 
@@ -14,7 +13,6 @@ struct Connection
 {
 	Socket socket;
 	std::string outBuffer;
-
 	Connection();
 	Connection(int fd);
 	// Connection(Socket &s) : socket(std::move(s)) {}

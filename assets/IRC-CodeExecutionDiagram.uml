@@ -22,7 +22,7 @@ end box
 
 box "Command Layer"
   participant "Dispatcher\n(or CommandProcessor)" as D
-  participant "PASS handler" as HPASS
+  participant "PASS handler" as HPAS[k]S
   participant "NICK handler" as HNICK
   participant "USER handler" as HUSER
   participant "JOIN handler" as HJOIN

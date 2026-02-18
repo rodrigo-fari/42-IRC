@@ -1,8 +1,8 @@
 #pragma once
 
-#include <map>
-#include <vector>
-#include <cstdio>
+# include <map>
+# include <vector>
+# include <cstdio>
 # include "../network/Socket.hpp"
 # include "../network/Network.hpp"
 # include "../parser/ParserAndDispatch.hpp"
@@ -11,6 +11,9 @@
 # include "../core/ClientStateRepository.hpp"
 # include "../commandHandler/Dispatcher.hpp"
 
+#ifndef DEBUG
+#define DEBUG 0 
+#endif
 
 class Server
 {
@@ -25,6 +28,10 @@ private:
 	ClientStateRepository clientStateRepository;
 	Dispatcher dispatcher;
 	ParserAndDispatcher parserDispatcher;
+		
+	IrcMessageFramer framer;
+	MessagePayload payload;
+
 
 public:
 	Server(const std::string &port);
