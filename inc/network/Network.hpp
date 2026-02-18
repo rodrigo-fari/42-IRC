@@ -13,7 +13,6 @@
 struct Connection
 {
 	Socket socket;
-	std::string inBuffer;
 	std::string outBuffer;
 
 	Connection();
