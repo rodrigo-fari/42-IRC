@@ -5,6 +5,7 @@
 #include <cstdio>
 # include "../network/Socket.hpp"
 # include "../network/Network.hpp"
+# include "../parser/ParserAndDispatch.hpp"
 
 
 class Server
@@ -14,6 +15,7 @@ private:
 	Socket serverSocket;
 	std::map<int, Connection> connections;
 	PollSet pollset;
+	ParserAndDispatcher parserDispatcher;
 
 public:
 	Server(const std::string &port);

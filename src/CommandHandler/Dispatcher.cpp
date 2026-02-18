@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 21:34:34 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/17 23:50:16 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,5 +24,5 @@ std::string dispatch(int fd, const MessagePayload& payload)
 			return ("PONG :" + payload.params[0] + "\r\n");
 		return ("PONG\r\n");
 	}
-	return ("Command not found\r\n");
+	return ("\r\n");
 }
