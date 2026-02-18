@@ -1,6 +1,12 @@
 #include "../../inc/core/Server.hpp"
 
-Server::Server(const std::string &port) : port(port), serverSocket(-1) {}
+Server::Server(const std::string &port) 
+	: port(port), 
+	  serverSocket(-1),
+	  dispatcher(userRepository, channelRepository, clientStateRepository, "42IRC"),
+	  parserDispatcher(dispatcher)
+{
+}
 
 Server::~Server() { close_all(); }
 
@@ -25,7 +31,7 @@ int Server::set_nonblocking(int fd)
 {
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags < 0)
-		return -1;
+		return (-1);
 	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 

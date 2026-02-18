@@ -6,6 +6,10 @@
 # include "../network/Socket.hpp"
 # include "../network/Network.hpp"
 # include "../parser/ParserAndDispatch.hpp"
+# include "../core/UserRepository.hpp"
+# include "../core/ChannelRepository.hpp"
+# include "../core/ClientStateRepository.hpp"
+# include "../commandHandler/Dispatcher.hpp"
 
 
 class Server
@@ -15,6 +19,11 @@ private:
 	Socket serverSocket;
 	std::map<int, Connection> connections;
 	PollSet pollset;
+	
+	UserRepository userRepository;
+	ChannelRepository channelRepository;
+	ClientStateRepository clientStateRepository;
+	Dispatcher dispatcher;
 	ParserAndDispatcher parserDispatcher;
 
 public:

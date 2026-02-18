@@ -6,7 +6,7 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/17 21:38:23 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/18 00:21:00 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/18 00:38:23 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,9 +30,10 @@ class ParserAndDispatcher
 {
 private:
 	IrcMessageFramer _framer;
+	Dispatcher& _dispatcher;
 
 public:
-	ParserAndDispatcher();
+	ParserAndDispatcher(Dispatcher& dispatcher);
 	~ParserAndDispatcher();
 
 	/**

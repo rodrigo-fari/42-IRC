@@ -6,14 +6,14 @@
 /*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/12 17:51:56 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 21:33:51 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/18 00:59:30 by rde-fari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 //#include "core/Core.hpp"
 #include "parser/IrcMessageFramer.hpp"
 #include "parser/IrcParser.hpp"
-#include "../inc/core/Server.hpp"
+#include "../inc/core/Server.hpp"	
 
 int main(int argc, char **argv)
 {
