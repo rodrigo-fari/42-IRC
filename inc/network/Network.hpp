@@ -6,13 +6,13 @@
 #include <map>
 
 
-
-
-
 struct Connection
 {
 	Socket socket;
 	std::string outBuffer;
+
+	IrcMessageFramer framer;
+
 	Connection();
 	Connection(int fd);
 	// Connection(Socket &s) : socket(std::move(s)) {}

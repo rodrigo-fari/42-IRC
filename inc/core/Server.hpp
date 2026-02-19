@@ -29,9 +29,7 @@ private:
 	Dispatcher dispatcher;
 	ParserAndDispatcher parserDispatcher;
 		
-	IrcMessageFramer framer;
-	MessagePayload payload;
-
+	
 
 public:
 	Server(const std::string &port);

@@ -170,6 +170,7 @@ void Server::run()
 
 			const int fd = pollset.pfds[i].fd;
 			const short re = pollset.pfds[i].revents;
+			Connection &connection = connections[fd];
 			pollset.pfds[i].revents = 0;
 			if (re == 0)
 			{
@@ -210,66 +211,35 @@ void Server::run()
 				if (DEBUG)
 					std::cout << "[NETWORK] POLLIN event for client fd=" << fd << std::endl;
 				char buffer[4096];
-				Connection &reader = connections[fd];
+				// connection = connections[fd];
 				while (true)
 				{
-					const ssize_t bytesRead = reader.socket.receiveData(buffer, sizeof(buffer));
-					if (bytesRead > 0)
+					const ssize_t bitesRead = connection.socket.receiveData(buffer, sizeof(buffer));
+					if (bitesRead > 0)
 					{
-						// std::string rawData(buffer, bytesRead);
-						// reader.outBuffer = parserDispatcher.processData(fd, rawData);
-						// set_pollout_for_fd(pollset, fd);
+						
 
-						reader.inBuffer.append(buffer, buffer + bitesRead);
-						std::vector<std::string> lines = framer.processRawData(fd, reader.inBuffer);
+						connection.inBuffer.append(buffer, buffer + bitesRead);
+						std::vector<std::string> lines = connection.framer.processRawData(fd, connection.inBuffer);
 						for (size_t j = 0; j < lines.size(); ++j)
 						{
 							const std::string& normalizedLine = lines[j];
 							std::cout << "[RECEIVED] fd=" << fd << " line: " << normalizedLine << "\n";
 
-							payload = parseMessage(normalizedLine);
+							MessagePayload payload = parseMessage(normalizedLine);
 							std::string responseLines = dispatch(fd, payload);
 							if (!responseLines.empty())
 							{
 								std::cout << "[RESPONSE] fd=" << fd << " line: " << responseLines << "\n";
-								bool wasEmpty = reader.outBuffer.empty();
-								reader.outBuffer += responseLines;
-								if (wasEmpty)
-									set_pollout_for_fd(pollset, fd);
-								
-								
+								connection.outBuffer += responseLines;
+								set_pollout_for_fd(pollset, fd);
+								// if (!connection.outBuffer.empty())
+								// {
+								// }	
 							}
 						}
-						continue;
-						// while (true)
-						// {
-						// 	std::string line;
-						// 	size_t pos = reader.inBuffer.find("\r\n");
-						// 	if (pos != std::string::npos)
-						// 	{
-						// 		line = reader.inBuffer.substr(0, pos);
-						// 		reader.inBuffer.erase(0, pos + 2);
-						// 	}
-						// 	else
-						// 	{
-						// 		pos = reader.inBuffer.find('\n');
-						// 		if (pos == std::string::npos)
-						// 			break;
-						// 		line = reader.inBuffer.substr(0, pos);
-						// 		reader.inBuffer.erase(0, pos + 1);
-						// 	}
-						// 	std::cout << "[RECEIVED] fd=" << fd << " line: " << line << "\n";
-						// 	std::string normalizedLine;
-						// 	if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n")
-						// 		normalizedLine = line;
-						// 	else if (!line.empty() && line[line.size() - 1] == '\n')
-						// 		normalizedLine = line.substr(0, line.size() - 1) + "\r\n";
-						// 	else
-						// 		normalizedLine = line + "\r\n";
-						// 	reader.outBuffer += "ECHO: " + normalizedLine;
-						// 	set_pollout_for_fd(pollset, fd);
-						// }
-						// continue;
+						connection.inBuffer.clear();
+						
 					}
 					if (bytesRead == 0)
 					{
@@ -289,17 +259,16 @@ void Server::run()
 
 				if (DEBUG)
 					std::cout << "[NETWORK] POLLOUT event for fd=" << fd << std::endl;
-				Connection &sender = connections[fd];
-				std::string &out = sender.outBuffer;
-				while (!out.empty())
+				// connection = connections[fd];
+				while (!connection.outBuffer.empty())
 				{
 					if (DEBUG)
-						std::cout << "[NETWORK] POLLOUT sending to fd=" << fd << " contents='" << out << "' size=" << out.size() << std::endl;
-					ssize_t sent = sender.socket.sendData(out);
+						std::cout << "[NETWORK] POLLOUT sending to fd=" << fd << " contents='" << connection.outBuffer << "' size=" << connection.outBuffer.size() << std::endl;
+					ssize_t sent = connection.socket.sendData(connection.outBuffer);
 					std::cout << "[DEBUG] send() returned: " << sent << std::endl;
 					if (sent > 0)
 					{
-						out.erase(0, sent);
+						connection.outBuffer.erase(0, sent);
 						continue;
 					}
 					if (sent < 0 && (errno == EAGAIN))
@@ -308,7 +277,7 @@ void Server::run()
 						break;
 					}
 				}
-				if (out.empty())
+				if (connection.outBuffer.empty())
 					pollset.pfds[i].events &= ~POLLOUT;
 			}
 			i++;
