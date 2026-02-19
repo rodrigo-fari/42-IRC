@@ -19,9 +19,7 @@ private:
 	std::map<int, Connection> connections;
 	PollSet pollset;
 		
-	IrcMessageFramer framer;
-	MessagePayload payload;
-
+	
 
 public:
 	Server(const std::string &port);
