@@ -3,13 +3,13 @@
 # include <map>
 # include <vector>
 # include <cstdio>
-# include "../network/Socket.hpp"
-# include "../network/Network.hpp"
-# include "../parser/ParserAndDispatch.hpp"
-# include "../core/UserRepository.hpp"
-# include "../core/ChannelRepository.hpp"
-# include "../core/ClientStateRepository.hpp"
-# include "../commandHandler/Dispatcher.hpp"
+# include "network/Socket.hpp"
+# include "network/Network.hpp"
+# include "parser/ParserAndDispatch.hpp"
+# include "commandHandler/Dispatcher.hpp"
+# include "core/UserRepository.hpp"
+# include "core/ChannelRepository.hpp"
+# include "core/ClientStateRepository.hpp"
 
 #ifndef DEBUG
 #define DEBUG 0 
@@ -28,6 +28,7 @@ private:
 	ClientStateRepository clientStateRepository;
 	Dispatcher dispatcher;
 	ParserAndDispatcher parserDispatcher;
+
 		
 	
 

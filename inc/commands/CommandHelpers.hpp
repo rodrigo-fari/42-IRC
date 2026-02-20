@@ -6,12 +6,21 @@
 #include "../../inc/core/UserRepository.hpp"
 #include "../../inc/commands/Channel.hpp"
 
-
+static std::string normalizeForWire(const std::string& line)
+{
+	if (line.size() >= 2 &&
+		line[line.size() - 2] == '\r' &&
+		line[line.size() - 1] == '\n')
+		return line;
+	if (!line.empty() && line[line.size() - 1] == '\n')
+		return line.substr(0, line.size() - 1) + "\r\n";
+	return line + "\r\n";
+}
 //!(from Rod) Hex chat by default ja manda tudo com o \r\n, nao precisa adicionar.
 //! Mesmo que nao seja pelo hex, quando nos conectamos no servidor com 'nc -C etc.'
 //! essa flag serve para que cada enter seja '\r\n' envez de '\n'.
 static inline void sendTo(User& u, const std::string& line) {
-	u.enqueue(line);
+	u.enqueue(normalizeForWire(line));
 }
 
 static inline std::string prefix(const User& u) {

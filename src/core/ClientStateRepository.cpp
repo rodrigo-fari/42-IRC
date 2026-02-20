@@ -22,6 +22,8 @@ ClientState& ClientStateRepository::getClientStatus(int fd)
 		cs.hasUsername = false;
 		cs.hasPassword = false;
 		cs.hasNickname = false;
+		cs.nickname = "";
+		cs.username = "";
 		status.insert(std::make_pair(fd, cs));
 		it = status.find(fd);
 	}

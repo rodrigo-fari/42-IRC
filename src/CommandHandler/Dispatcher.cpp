@@ -1,14 +1,14 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   Dispatcher.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
+/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/18 00:38:34 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/20 15:38:57 by rerodrig         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "commandHandler/Dispatcher.hpp"
 #include "commands/JoinCommand.hpp"
@@ -16,8 +16,10 @@
 #include "commands/PartCommand.hpp"
 #include "commands/TopicCommand.hpp"
 #include "commands/InviteCommand.hpp"
+#include "commands/NickCommand.hpp"
+#include "commands/UserCommand.hpp"
 
-Dispatcher::Dispatcher(UserRepository& ur, ChannelRepository& cr, ClientStateRepository& csr, const std::string& srv)
+Dispatcher::Dispatcher(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv)
 	: userRepository(ur), channelRepository(cr), clientStateRepository(csr), serverName(srv)
 {
 }
@@ -26,10 +28,11 @@ Dispatcher::~Dispatcher()
 {
 }
 
-std::string Dispatcher::dispatch(int fd, const MessagePayload& payload)
+std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 {
 	std::string cmd = payload.command;
-	
+	ClientState &state = clientStateRepository.getClientStatus(fd);
+
 	// Convert command to uppercase
 	for (size_t i = 0; i < cmd.length(); i++)
 		cmd[i] = toupper(cmd[i]);
@@ -85,6 +88,28 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload& payload)
 	// PASS command (simplified for now)
 	if (cmd == "PASS")
 	{
+		return "";
+	}
+
+	// NICK command
+	if (cmd == "NICK")
+	{
+		bool wasRegistered = state.isRegistered;
+		NickCommand nickCmd(userRepository, channelRepository, clientStateRepository, serverName);
+		nickCmd.execute(fd, payload);
+		if (!wasRegistered && state.isRegistered)
+			return ":" + serverName + " 001 " + state.nickname + " :Welcome to " + serverName + ", " + state.nickname + "\r\n";
+		return "";
+	}
+
+	// USER command
+	if (cmd == "USER")
+	{
+		bool wasRegistered = state.isRegistered;
+		UserCommand userCmd(userRepository, channelRepository, clientStateRepository, serverName);
+		userCmd.execute(fd, payload);
+		if (!wasRegistered && state.isRegistered)
+			return ":" + serverName + " 001 " + state.nickname + " :Welcome to " + serverName + ", " + state.nickname + "\r\n";
 		return "";
 	}
 

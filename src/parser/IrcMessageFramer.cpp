@@ -1,32 +1,32 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   IrcMessageFramer.cpp                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
+/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/09 19:11:23 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 21:33:51 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/20 02:03:01 by rerodrig         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
 #include "parser/IrcMessageFramer.hpp"
 
 /**
  * @brief Processa informacao crua do cliente
- * 
+ *
  * Recebe informacao "crua" do servidor ("recv()"), processa, e devolve um vetor com
  * cada um dos comandos por indice na totalidade.
- * 
+ *
  * @param fd File descriptor do cliente.
  * @param rawData Informacao crua recebida pelo servidor ("recv()").
  * @return extractedLines Vetor de strings com cada comando recebido, por indice, na totalidade (sem "\r\n").
  */
-std::vector<std::string> IrcMessageFramer::processRawData(int fd, const std::string& rawData)
+std::vector<std::string> IrcMessageFramer::processRawData(int fd, const std::string &rawData)
 {
 	size_t pos;
 	std::vector<std::string> extractedLines;
-	
+
 	_buffers[fd] += rawData;
 
 	while ((pos = _buffers[fd].find("\r\n")) != std::string::npos)

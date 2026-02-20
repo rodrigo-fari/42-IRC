@@ -2,7 +2,13 @@
 MAKEFLAGS += -s
 NAME = ircserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I inc/ -g3 -fsanitize=address
+BASE_CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -I inc/ -g3
+SANITIZE ?= 1
+SANITIZE_FLAGS =
+ifeq ($(SANITIZE),1)
+SANITIZE_FLAGS += -fsanitize=address
+endif
+CXXFLAGS = $(BASE_CXXFLAGS) $(SANITIZE_FLAGS)
 SRC_DIR = src
 OBJ_DIR = obj
 INC_DIR = inc
