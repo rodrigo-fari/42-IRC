@@ -1,25 +1,32 @@
-/* ************************************************************************** */
+/******************************************************************************/
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
+/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/12 17:51:56 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/18 00:59:30 by rde-fari         ###   ########.fr       */
+/*   Updated: 2026/02/20 18:27:58 by rerodrig         ###   ########.fr       */
 /*                                                                            */
-/* ************************************************************************** */
+/******************************************************************************/
 
-//#include "core/Core.hpp"
+#include <iostream>
+// #include "core/Core.hpp"
 #include "parser/IrcMessageFramer.hpp"
 #include "parser/IrcParser.hpp"
-#include "../inc/core/Server.hpp"	
+#include "../inc/core/Server.hpp"
 
 int main(int argc, char **argv)
 {
-	const std::string port = (argc >= 2) ? argv[1] : "6667";
-	Server server(port);
 
+	std::string port = "6667";
+	std::string password = "pass";
+	if (argc > 1)
+		port = argv[1];
+	if (argc > 2)
+		password = argv[2];
+
+	Server server(port, password);
 	server.init();
 	return 0;
 

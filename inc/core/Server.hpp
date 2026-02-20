@@ -19,6 +19,7 @@ class Server
 {
 private:
 	std::string port;
+	std::string serverPassword;
 	Socket serverSocket;
 	std::map<int, Connection> connections;
 	PollSet pollset;
@@ -33,7 +34,7 @@ private:
 	
 
 public:
-	Server(const std::string &port);
+	Server(const std::string &port, const std::string &password);
 	~Server();
 
 	void run();

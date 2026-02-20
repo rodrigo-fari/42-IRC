@@ -50,6 +50,9 @@ MessagePayload parseMessage(const std::string& line)
 	MessagePayload payload;
 	size_t i = 0;
 
+	if (line.empty())
+		return payload;
+
 	while (i < line.size() && line[i] == ' ')
 		i++;
 	if (i < line.size() && line[i] == ':')
@@ -57,7 +60,7 @@ MessagePayload parseMessage(const std::string& line)
 		while (i < line.size() && line[i] != ' ')
 			i++;
 	}
-	if (line[i] == ' ')
+	if (i < line.size() && line[i] == ' ')
 		i += 1;
 	payload.command = getCommand(line, i);
 	payload.params = getArgs(line, i);

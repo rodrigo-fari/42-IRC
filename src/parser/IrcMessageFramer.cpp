@@ -6,7 +6,7 @@
 /*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/09 19:11:23 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/20 02:03:01 by rerodrig         ###   ########.fr       */
+/*   Updated: 2026/02/20 18:46:21 by rerodrig         ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -41,5 +41,5 @@ std::vector<std::string> IrcMessageFramer::processRawData(int fd, const std::str
 void IrcMessageFramer::clearClient(int fd)
 {
 	_buffers[fd].clear();
-	std::cout << "DEBUG:\nIrcMessagrFramer.cpp -> 34\n_buffers cleared!\n";
+	// std::cout << "DEBUG:\nIrcMessagrFramer.cpp -> 34\n_buffers cleared!\n";
 }

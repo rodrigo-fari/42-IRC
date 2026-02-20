@@ -1,3 +1,15 @@
+/******************************************************************************/
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   UserCommand.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/12 17:51:56 by rde-fari          #+#    #+#             */
+/*   Updated: 2026/02/20 18:53:32 by rerodrig         ###   ########.fr       */
+/*                                                                            */
+/******************************************************************************/
+
 #include "commands/UserCommand.hpp"
 
 UserCommand::UserCommand(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv)
@@ -6,7 +18,7 @@ UserCommand::UserCommand(UserRepository &ur, ChannelRepository &cr, ClientStateR
 void UserCommand::execute(int fd, const MessagePayload &payload)
 {
     ClientState &state = clientStateRepository.getClientStatus(fd);
-    (void)serverName;
+
 
     if (payload.params.size() < 4)
         return;

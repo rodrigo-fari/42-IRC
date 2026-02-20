@@ -6,7 +6,6 @@ NickCommand::NickCommand(UserRepository &ur, ChannelRepository &cr, ClientStateR
 void NickCommand::execute(int fd, const MessagePayload &payload)
 {
     ClientState &state = clientStateRepository.getClientStatus(fd);
-    (void)serverName;
 
     if (payload.params.empty())
         return;
@@ -18,5 +17,4 @@ void NickCommand::execute(int fd, const MessagePayload &payload)
         bool created = userRepository.createUser(fd, state.nickname, "");
         if (created || userRepository.findUserByFileDescriptor(fd))
             state.isRegistered = true;
-    }
-}
+    }}

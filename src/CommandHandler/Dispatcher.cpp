@@ -6,7 +6,7 @@
 /*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/20 15:38:57 by rerodrig         ###   ########.fr       */
+/*   Updated: 2026/02/20 18:58:57 by rerodrig         ###   ########.fr       */
 /*                                                                            */
 /******************************************************************************/
 
@@ -19,8 +19,10 @@
 #include "commands/NickCommand.hpp"
 #include "commands/UserCommand.hpp"
 
-Dispatcher::Dispatcher(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv)
-	: userRepository(ur), channelRepository(cr), clientStateRepository(csr), serverName(srv)
+Dispatcher::Dispatcher(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr,
+					   const std::string &srv)
+	: userRepository(ur), channelRepository(cr), clientStateRepository(csr),
+	  serverName(srv)
 {
 }
 
@@ -88,29 +90,25 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	// PASS command (simplified for now)
 	if (cmd == "PASS")
 	{
-		return "";
+		state.hasPassword = true;
+		return "passcommand\r\n";
 	}
 
 	// NICK command
 	if (cmd == "NICK")
 	{
-		bool wasRegistered = state.isRegistered;
 		NickCommand nickCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		nickCmd.execute(fd, payload);
-		if (!wasRegistered && state.isRegistered)
-			return ":" + serverName + " 001 " + state.nickname + " :Welcome to " + serverName + ", " + state.nickname + "\r\n";
-		return "";
+		return "nickcommand\r\n";
 	}
 
 	// USER command
 	if (cmd == "USER")
 	{
-		bool wasRegistered = state.isRegistered;
+
 		UserCommand userCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		userCmd.execute(fd, payload);
-		if (!wasRegistered && state.isRegistered)
-			return ":" + serverName + " 001 " + state.nickname + " :Welcome to " + serverName + ", " + state.nickname + "\r\n";
-		return "";
+		return "usercommnand\r\n";
 	}
 
 	// Unknown command - just ignore for now
