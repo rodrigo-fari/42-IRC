@@ -1,12 +1,18 @@
 #include "../../inc/core/Server.hpp"
+#include <cctype>
 
-
-Server::Server(const std::string &port) : port(port), serverSocket(-1) {}
+Server::Server(const std::string &port, const std::string &password)
+	: port(port),
+	  serverPassword(password),
+	  serverSocket(-1),
+	  dispatcher(userRepository, channelRepository, clientStateRepository, "42IRC", password),
+	  parserDispatcher(dispatcher)
+{
+}
 
 Server::~Server() { close_all(); }
 
 int Server::getSize() const { return pollset.pfds.size(); }
-
 
 // Helper: set POLLOUT for the correct pollfd given an fd
 void set_pollout_for_fd(PollSet &pollset, int fd)
@@ -16,7 +22,7 @@ void set_pollout_for_fd(PollSet &pollset, int fd)
 		if (pollset.pfds[j].fd == fd)
 		{
 			pollset.pfds[j].events |= POLLOUT;
-			std::cout << "[DEBUG POLLOUT] Set to fd=" << fd << std::endl;
+			// std::cout << "[DEBUG POLLOUT] Set to fd=" << fd << std::endl;
 			break;
 		}
 	}
@@ -26,7 +32,7 @@ int Server::set_nonblocking(int fd)
 {
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags < 0)
-		return -1;
+		return (-1);
 	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
@@ -107,23 +113,27 @@ void Server::close_all()
 	serverSocket.closeSocket();
 }
 
-static void del_pfd(std::vector<pollfd> &pfds, std::size_t i)
-{
-	pfds[i] = pfds.back();
-	pfds.pop_back();
-}
+// static void del_pfd(std::vector<pollfd> &pfds, std::size_t i)
+// {
+// 	pfds[i] = pfds.back();
+// 	pfds.pop_back();
+// }
 
 void Server::disconnect(std::vector<pollfd> &pfds, std::size_t i)
 {
 	const int fd = pfds[i].fd;
 	pfds.erase(pfds.begin() + i);
-	std::cout << "[DISCONNECT] fd=" << fd << " disconnected (clients=" << getSize() - 1 << ")"<< std::endl;
+	std::cout << "[DISCONNECT] fd=" << fd << " disconnected (clients=" << pollset.pfds.size() - 1 << ")" << std::endl;
 	if (fd != serverSocket.getSocketFd() && connections.count(fd))
 	{
+		connections[fd].clearInBuffer();
+		parserDispatcher.clearClient(fd);
+		clientStateRepository.remove(fd);
+		userRepository.removeUserByFileDescriptor(fd);
 		connections[fd].socket.closeSocket();
 		connections.erase(fd);
 	}
-	del_pfd(pfds, i);
+	// del_pfd(pfds, i);
 }
 
 void Server::init()
@@ -165,7 +175,7 @@ void Server::run()
 
 			const int fd = pollset.pfds[i].fd;
 			const short re = pollset.pfds[i].revents;
-			Connection &connection = connections[fd];
+			// Connection &connection = connections[fd];
 			pollset.pfds[i].revents = 0;
 			if (re == 0)
 			{
@@ -203,76 +213,97 @@ void Server::run()
 			// DATA RECEIVING HANDLING readAll
 			if (re & POLLIN)
 			{
-				if (DEBUG)
-					std::cout << "[NETWORK] POLLIN event for client fd=" << fd << std::endl;
+				// if (DEBUG)
+					// std::cout << "[NETWORK] POLLIN event for client fd=" << fd << std::endl;
+				if (connections.count(fd) == 0)
+				{
+					i++;
+					continue;
+				}
+
 				char buffer[4096];
-				// connection = connections[fd];
 				while (true)
 				{
-					const ssize_t bitesRead = connection.socket.receiveData(buffer, sizeof(buffer));
+					const ssize_t bitesRead = connections[fd].socket.receiveData(buffer, sizeof(buffer));
 					if (bitesRead > 0)
 					{
-						
+						std::string rawData(buffer, bitesRead);
+						std::string response = parserDispatcher.processData(fd, rawData);
+						connections[fd].outBuffer += response;
 
-						connection.inBuffer.append(buffer, buffer + bitesRead);
-						std::vector<std::string> lines = connection.framer.processRawData(fd, connection.inBuffer);
-						for (size_t j = 0; j < lines.size(); ++j)
-						{
-							const std::string& normalizedLine = lines[j];
-							std::cout << "[RECEIVED] fd=" << fd << " line: " << normalizedLine << "\n";
-
-							MessagePayload payload = parseMessage(normalizedLine);
-							std::string responseLines = dispatch(fd, payload);
-							if (!responseLines.empty())
-							{
-								std::cout << "[RESPONSE] fd=" << fd << " line: " << responseLines << "\n";
-								connection.outBuffer += responseLines;
-								set_pollout_for_fd(pollset, fd);
-								// if (!connection.outBuffer.empty())
-								// {
-								// }	
-							}
-						}
-						connection.inBuffer.clear();
-						
+						User *user = userRepository.findUserByFileDescriptor(fd);
+						if (!response.empty() || (user && !user->outbox.empty()))
+							set_pollout_for_fd(pollset, fd);
+						continue;
 					}
+
 					if (bitesRead == 0)
 					{
-						std::cout << "[NETWORK] Client fd=" << fd << " disconnected (recv returned 0)" << std::endl;
+						if (DEBUG)
+							std::cout << "[NETWORK] Client fd=" << fd << " disconnected (recv returned 0)" << std::endl;
 						disconnect(pollset.pfds, i);
 						break;
 					}
+
 					if (errno == EAGAIN || errno == EWOULDBLOCK)
 						break;
-					
+					disconnect(pollset.pfds, i);
+					break;
 				}
 			}
 			// HANDLING SEND FROM SERVER TO CLIENT
 			if (re & POLLOUT)
 			{
-
 				if (DEBUG)
 					std::cout << "[NETWORK] POLLOUT event for fd=" << fd << std::endl;
-				// connection = connections[fd];
-				while (!connection.outBuffer.empty())
+				if (connections.count(fd) == 0)
+				{
+					i++;
+					continue;
+				}
+				User *user = userRepository.findUserByFileDescriptor(fd);
+				if (user)
+				{
+					while (!user->outbox.empty())
+					{
+						connections[fd].outBuffer += user->outbox.front();
+						user->outbox.erase(user->outbox.begin());
+					}
+				}
+
+				while (!connections[fd].outBuffer.empty())
 				{
 					if (DEBUG)
-						std::cout << "[NETWORK] POLLOUT sending to fd=" << fd << " contents='" << connection.outBuffer << "' size=" << connection.outBuffer.size() << std::endl;
-					ssize_t sent = connection.socket.sendData(connection.outBuffer);
-					std::cout << "[DEBUG] send() returned: " << sent << std::endl;
+						std::cout << "[NETWORK] POLLOUT sending to fd=" << fd
+								  << " contents='" << connections[fd].outBuffer
+								  << "' size=" << connections[fd].outBuffer.size() << std::endl;
+					ssize_t sent = connections[fd].socket.sendData(connections[fd].outBuffer);
+					if (DEBUG)
+						std::cout << "[DEBUG] send() returned: " << sent << std::endl;
 					if (sent > 0)
 					{
-						connection.outBuffer.erase(0, sent);
+						connections[fd].outBuffer.erase(0, sent);
 						continue;
 					}
-					if (sent < 0 && (errno == EAGAIN))
+					if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+						break;
+					if (sent <= 0)
 					{
-						std::cerr << "[ERROR] send failed, errno=" << errno << std::endl;
+						disconnect(pollset.pfds, i);
 						break;
 					}
 				}
-				if (connection.outBuffer.empty())
+
+				if (connections[fd].outBuffer.empty())
+				{
 					pollset.pfds[i].events &= ~POLLOUT;
+					ClientState &state = clientStateRepository.getClientStatus(fd);
+					if (state.closeAfterFlush)
+					{
+						disconnect(pollset.pfds, i);
+						continue;
+					}
+				}
 			}
 			i++;
 		}

@@ -1,3 +1,4 @@
+
 #include "../../inc/network/Network.hpp"
 
 Connection::Connection() : socket(-1) {}

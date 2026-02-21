@@ -13,6 +13,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 
 #include <utility>
 #include <iostream>
@@ -23,6 +24,9 @@ struct ClientState
 	bool hasNickname;
 	bool hasUsername;
 	bool hasPassword;
+	bool closeAfterFlush;
+	std::string nickname;
+	std::string username;
 };
 
 class ClientStateRepository

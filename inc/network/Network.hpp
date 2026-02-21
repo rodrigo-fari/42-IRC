@@ -1,21 +1,17 @@
-# include "network/Socket.hpp"
-# include "network/IrcMessageFramer.hpp"
-#include "parser/IrcParser.hpp"
 #include <poll.h>
 #include <vector>
 #include <map>
-
+#include "network/Socket.hpp"
 
 struct Connection
 {
 	Socket socket;
-	std::string inBuffer;
 	std::string outBuffer;
-
-	IrcMessageFramer framer;
+	std::string inBuffer;
 
 	Connection();
 	Connection(int fd);
+	void clearInBuffer() { inBuffer.clear(); }
 	// Connection(Socket &s) : socket(std::move(s)) {}
 };
 
@@ -26,4 +22,3 @@ struct PollSet
 
 	void add(int fd, short events);
 };
-
