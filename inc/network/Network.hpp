@@ -7,11 +7,11 @@ struct Connection
 {
 	Socket socket;
 	std::string outBuffer;
-	std::string inboundBuffer;
+	std::string inBuffer;
 
 	Connection();
 	Connection(int fd);
-	void clearInboundBuffer() { inboundBuffer.clear(); }
+	void clearInBuffer() { inBuffer.clear(); }
 	// Connection(Socket &s) : socket(std::move(s)) {}
 };
 

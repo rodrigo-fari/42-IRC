@@ -1,4 +1,4 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   Dispatcher.cpp                                     :+:      :+:    :+:   */
@@ -6,9 +6,9 @@
 /*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:41:21 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/20 18:58:57 by rerodrig         ###   ########.fr       */
+/*   Updated: 2026/02/21 00:50:41 by rerodrig         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #include "commandHandler/Dispatcher.hpp"
 #include "commands/JoinCommand.hpp"
@@ -18,11 +18,12 @@
 #include "commands/InviteCommand.hpp"
 #include "commands/NickCommand.hpp"
 #include "commands/UserCommand.hpp"
+#include "commands/CommandHelpers.hpp"
 
 Dispatcher::Dispatcher(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr,
-					   const std::string &srv)
+					   const std::string &srv, const std::string &password)
 	: userRepository(ur), channelRepository(cr), clientStateRepository(csr),
-	  serverName(srv)
+	  serverName(srv), serverPassword(password)
 {
 }
 
@@ -34,17 +35,33 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 {
 	std::string cmd = payload.command;
 	ClientState &state = clientStateRepository.getClientStatus(fd);
+	const bool wasRegistered = state.isRegistered;
+	std::string response;
 
 	// Convert command to uppercase
 	for (size_t i = 0; i < cmd.length(); i++)
 		cmd[i] = toupper(cmd[i]);
 
+	// CAP negotiation
+	if (cmd == "CAP")
+	{
+		std::string subcmd;
+		if (subcmd == "LS")
+			return ":" + serverName + " CAP * LS :\r\n";
+		if (subcmd == "REQ")
+		{
+			std::string requested = payload.params.size() >= 2 ? payload.params[1] : "";
+			return ":" + serverName + " CAP * NAK :" + requested + "\r\n";
+		}
+		return "";
+	}
+
 	// PING command
 	if (cmd == "PING")
 	{
 		if (payload.params.size() >= 1)
-			return ("PONG :" + payload.params[0] + "\r\n");
-		return ("PONG\r\n");
+			return (":" + serverName + " PONG " + serverName + " :" + payload.params[0] + "\r\n");
+		return (":" + serverName + " PONG " + serverName + "\r\n");
 	}
 
 	// JOIN command
@@ -87,11 +104,51 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 		return "";
 	}
 
-	// PASS command (simplified for now)
+	// PRIVMSG command
+	if (cmd == "PRIVMSG")
+	{
+		User *sender = userRepository.findUserByFileDescriptor(fd);
+		const std::string &target = payload.params[0];
+		const std::string &message = payload.params[1];
+		const std::string line = prefix(*sender) + " PRIVMSG " + target + " :" + message;
+
+		if (target[0] == '#')
+		{
+			Channel *channel = channelRepository.findChannelByChannelName(target);
+			std::vector<int> fds = channel->getUsersInChannelJoinOrder();
+			for (size_t i = 0; i < fds.size(); ++i)
+			{
+				if (fds[i] == fd)
+					continue;
+				User *member = userRepository.findUserByFileDescriptor(fds[i]);
+				if (member)
+					sendTo(*member, line);
+			}
+			return "";
+		}
+
+		User *targetUser = userRepository.findUserByUsername(target);
+		sendTo(*targetUser, line);
+		return "";
+	}
+
+	// PASS command
 	if (cmd == "PASS")
 	{
+		if (state.isRegistered)
+			return ":" + serverName + " 462 * :You may not reregister\r\n";
 		state.hasPassword = true;
-		return "passcommand\r\n";
+		if (!wasRegistered && state.hasNickname && state.hasUsername)
+		{
+			bool created = userRepository.createUser(fd, state.nickname, "");
+			if (created || userRepository.findUserByFileDescriptor(fd))
+			{
+				state.isRegistered = true;
+				return ":" + serverName + " 001 " + state.nickname +
+					   " :Welcome to the Internet Relay Network " + state.nickname + "\r\n";
+			}
+		}
+		return "";
 	}
 
 	// NICK command
@@ -99,7 +156,12 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	{
 		NickCommand nickCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		nickCmd.execute(fd, payload);
-		return "nickcommand\r\n";
+		if (!wasRegistered && state.isRegistered)
+		{
+			response += ":" + serverName + " 001 " + state.nickname +
+						" :Welcome to the Internet Relay Network " + state.nickname + "\r\n";
+		}
+		return response;
 	}
 
 	// USER command
@@ -108,7 +170,12 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 
 		UserCommand userCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		userCmd.execute(fd, payload);
-		return "usercommnand\r\n";
+		if (!wasRegistered && state.isRegistered)
+		{
+			response += ":" + serverName + " 001 " + state.nickname +
+						" :Welcome to the Internet Relay Network " + state.nickname + "\r\n";
+		}
+		return response;
 	}
 
 	// Unknown command - just ignore for now

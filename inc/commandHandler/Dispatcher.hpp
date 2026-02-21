@@ -36,10 +36,11 @@ private:
 	ChannelRepository &channelRepository;
 	ClientStateRepository &clientStateRepository;
 	std::string serverName;
+	std::string serverPassword;
 
 public:
 	Dispatcher(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr,
-		const std::string &srv);
+		const std::string &srv, const std::string &password);
 	~Dispatcher();
 
 	/**

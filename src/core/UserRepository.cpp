@@ -17,7 +17,7 @@ User* UserRepository::findUserByUsername(const std::string& username)
 	std::map<std::string, User>::iterator it = usersByUsername.find(username);
 	if (it == usersByUsername.end())
 		return 0;
-	return &it->second;
+	return findUserByFileDescriptor(it->second.fileDescriptor);
 }
 
 User* UserRepository::findUserByFileDescriptor(int fd)

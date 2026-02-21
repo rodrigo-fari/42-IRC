@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   NickCommand.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/12 17:51:56 by rde-fari          #+#    #+#             */
+/*   Updated: 2026/02/20 22:59:15 by rerodrig         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "commands/NickCommand.hpp"
 
 NickCommand::NickCommand(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv)
@@ -17,4 +29,5 @@ void NickCommand::execute(int fd, const MessagePayload &payload)
         bool created = userRepository.createUser(fd, state.nickname, "");
         if (created || userRepository.findUserByFileDescriptor(fd))
             state.isRegistered = true;
-    }}
+    }
+}
