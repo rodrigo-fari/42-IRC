@@ -35,6 +35,7 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 {
 	std::string cmd = payload.command;
 	ClientState &state = clientStateRepository.getClientStatus(fd);
+	const std::string target = state.nickname.empty() ? "*" : state.nickname;
 	const bool wasRegistered = state.isRegistered;
 	std::string response;
 
@@ -45,7 +46,9 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	// CAP negotiation
 	if (cmd == "CAP")
 	{
-		std::string subcmd;
+		std::string subcmd = payload.params.size() >= 1 ? payload.params[0] : "";
+		for (size_t i = 0; i < subcmd.length(); i++)
+			subcmd[i] = toupper(subcmd[i]);
 		if (subcmd == "LS")
 			return ":" + serverName + " CAP * LS :\r\n";
 		if (subcmd == "REQ")
@@ -136,9 +139,13 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	if (cmd == "PASS")
 	{
 		if (state.isRegistered)
-			return ":" + serverName + " 462 * :You may not reregister\r\n";
+			return ":" + serverName + " 462 " + target + " :You may not reregister\r\n";
+		if (payload.params.empty())
+			return ":" + serverName + " 461 " + target + " PASS :Not enough parameters\r\n";
+		if (payload.params[0] != serverPassword)
+			return ":" + serverName + " 464 " + target + " :Password incorrect\r\n";
 		state.hasPassword = true;
-		if (!wasRegistered && state.hasNickname && state.hasUsername)
+		if (!wasRegistered && state.hasPassword && state.hasNickname && state.hasUsername)
 		{
 			bool created = userRepository.createUser(fd, state.nickname, "");
 			if (created || userRepository.findUserByFileDescriptor(fd))
@@ -154,6 +161,8 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	// NICK command
 	if (cmd == "NICK")
 	{
+		if (payload.params.empty())
+			return ":" + serverName + " 431 " + target + " :No nickname given\r\n";
 		NickCommand nickCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		nickCmd.execute(fd, payload);
 		if (!wasRegistered && state.isRegistered)
@@ -167,6 +176,8 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	// USER command
 	if (cmd == "USER")
 	{
+		if (payload.params.size() < 4)
+			return ":" + serverName + " 461 " + target + " USER :Not enough parameters\r\n";
 
 		UserCommand userCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		userCmd.execute(fd, payload);
