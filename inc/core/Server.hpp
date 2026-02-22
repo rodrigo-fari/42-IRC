@@ -45,4 +45,8 @@ public:
 	int create_listener(const std::string &port);
 	void close_all();
 	void disconnect(std::vector<pollfd> &pfds, std::size_t i);
+
+	void handleConnection(Socket serverSocket, std::map<int, Connection> &connections);
+	void handlePollIn(int fd, std::map<int, Connection> &connections, int i);
+	void handlePollOut(int fd, std::map<int, Connection> &connections, int i);
 };
