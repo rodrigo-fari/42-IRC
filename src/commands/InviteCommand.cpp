@@ -14,13 +14,13 @@ void InviteCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	if (payload.params.size() < 3) {
+	if (payload.params.size() < 2) {
 		sendTo(*inviter, ":" + serverName + " 461 " + inviter->username + " INVITE :Not enough parameters");
 		return;
 	}
 
-	std::string targetNick = payload.params[1];
-	std::string channelName = payload.params[2];
+	std::string targetNick = payload.params[0];
+	std::string channelName = payload.params[1];
 
 	// canal existe?
 	Channel* ch = channelRepository.findChannelByChannelName(channelName);

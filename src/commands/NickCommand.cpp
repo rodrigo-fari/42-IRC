@@ -24,7 +24,7 @@ void NickCommand::execute(int fd, const MessagePayload &payload)
 
     state.nickname = payload.params[0];
     state.hasNickname = true;
-    if (!state.isRegistered && state.hasNickname && state.hasUsername)
+    if (!state.isRegistered && state.hasPassword && state.hasNickname && state.hasUsername)
     {
         bool created = userRepository.createUser(fd, state.nickname, "");
         if (created || userRepository.findUserByFileDescriptor(fd))

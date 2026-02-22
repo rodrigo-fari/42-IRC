@@ -173,7 +173,8 @@ void Server::handlePollIn(int fd, std::map<int, Connection>& connections, int i)
 			std::string rawData(buffer, bitesRead);
 			std::string response = parserDispatcher.processData(fd, rawData);
 			connections[fd].outBuffer += response;
-
+			if (DEBUG)
+				std::cout << "[handlePollIn] Client fd=" << fd << "says:  " << rawData << std::endl;
 			User* user = userRepository.findUserByFileDescriptor(fd);
 			if (!response.empty() || (user && !user->outbox.empty()))
 				set_pollout_for_fd(pollset, fd);
