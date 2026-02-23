@@ -1,32 +1,25 @@
 #include "../../inc/commands/JoinCommand.hpp"
-#include "../../inc/commands/CommandHelpers.hpp"
-#include "../../inc/core/ClientStateRepository.hpp"
 #include "../../inc/commands/Channel.hpp"
-#include "../../inc/core/ClientStateRepository.hpp" 
+#include "../../inc/commands/CommandGuards.hpp"
+#include "../../inc/commands/CommandHelpers.hpp"
 
-void JoinCommand::execute(int fd, const MessagePayload& payload) {
-	User* user = userRepository.findUserByFileDescriptor(fd);
-	if (!user) return;
-
+void JoinCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
+	User* user = userRepository.findUserByFileDescriptor(fd);
+	const std::string target = resolveReplyTarget(state, user);
 
-	// needs to be registered
-	if (!state.isRegistered) {
-		sendTo(*user, ":" + serverName + " 451 " + user->username + " :You have not registered");
+	if (!requireRegistered(state, target, replies))
 		return;
-	}
-
-	// payload.params for JOIN it comes like this "#chan", "key?"
-	if (payload.params.size() < 1) {
-		sendTo(*user, ":" + serverName + " 461 " + user->username + " JOIN :Not enough parameters");
+	if (!user)
 		return;
-	}
+	if (!requireParams(payload.params.size(), 1, target, "JOIN", replies))
+		return;
 
 	std::string channelName = payload.params[0];
 	std::string providedKey = (payload.params.size() >= 2) ? payload.params[1] : "";
 
 	if (channelName.empty() || channelName[0] != '#') {
-		sendTo(*user, ":" + serverName + " 403 " + user->username + " " + channelName + " :No such channel");
+		replies.error(ErrorReply(ERR_NOSUCHCHANNEL, target, "", channelName, "No such channel"));
 		return;
 	}
 
@@ -43,35 +36,27 @@ void JoinCommand::execute(int fd, const MessagePayload& payload) {
 	if (ch->isUserInChannel(user->fileDescriptor))
 		return;
 
-	// +i
 	if (ch->inviteOnlyPolicy && !ch->isUserInvited(user->fileDescriptor)) {
-		sendTo(*user, ":" + serverName + " 473 " + user->username + " " + channelName + " :Cannot join channel (+i)");
+		replies.error(ErrorReply(ERR_INVITEONLYCHAN, target, "", channelName, "Cannot join channel (+i)"));
 		return;
 	}
 
-	// +k
 	if (ch->hasChannelPassword && ch->channelPassword != providedKey) {
-		sendTo(*user, ":" + serverName + " 475 " + user->username + " " + channelName + " :Cannot join channel (+k)");
+		replies.error(ErrorReply(ERR_BADCHANNELKEY, target, "", channelName, "Cannot join channel (+k)"));
 		return;
 	}
 
-	// +l
 	if (ch->hasMaxUsersAmount && ch->usersCount() >= static_cast<size_t>(ch->maxUsersAmount)) {
-		sendTo(*user, ":" + serverName + " 471 " + user->username + " " + channelName + " :Cannot join channel (+l)");
+		replies.error(ErrorReply(ERR_CHANNELISFULL, target, "", channelName, "Cannot join channel (+l)"));
 		return;
 	}
 
-	// enter to channel
 	ch->addUserToChannel(user->fileDescriptor);
 	ch->uninviteUser(user->fileDescriptor);
 
-	// first to enter becomes OP
 	if (created)
 		ch->addChannelOperator(user->fileDescriptor);
 
-	// broadcast JOIN
 	broadcastToChannel(userRepository, *ch, prefix(*user) + " JOIN " + channelName);
-
-	// topic + names
 	replyTopicAndNames(userRepository, *user, *ch, serverName);
 }

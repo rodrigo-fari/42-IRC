@@ -1,40 +1,28 @@
 #include "../../inc/commands/TopicCommand.hpp"
 #include "../../inc/commands/Channel.hpp"
+#include "../../inc/commands/CommandGuards.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 
-void TopicCommand::execute(int fd, const MessagePayload& payload) {
-	User* user = userRepository.findUserByFileDescriptor(fd);
-	if (!user) return;
-
+void TopicCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
+	User* user = userRepository.findUserByFileDescriptor(fd);
+	const std::string target = resolveReplyTarget(state, user);
 
-	// needs to be registered
-	if (!state.isRegistered) {
-		sendTo(*user, ":" + serverName + " 451 " + user->username + " :You have not registered");
+	if (!requireRegistered(state, target, replies))
 		return;
-	}
-
-	// payload.params for TOPIC comes like this: "#chan" ou "#chan", "new topic..."
-	if (payload.params.size() < 1) {
-		sendTo(*user, ":" + serverName + " 461 " + user->username + " TOPIC :Not enough parameters");
+	if (!user)
 		return;
-	}
+	if (!requireParams(payload.params.size(), 1, target, "TOPIC", replies))
+		return;
 
 	std::string channelName = payload.params[0];
-
-	Channel* ch = channelRepository.findChannelByChannelName(channelName);
-	if (!ch) {
-		sendTo(*user, ":" + serverName + " 403 " + user->username + " " + channelName + " :No such channel");
+	Channel* ch = requireChannelExists(channelRepository, channelName, target, replies);
+	if (!ch)
 		return;
-	}
 
-	// have to be a channel member
-	if (!ch->isUserInChannel(user->fileDescriptor)) {
-		sendTo(*user, ":" + serverName + " 442 " + user->username + " " + channelName + " :You're not on that channel");
+	if (!requireMembership(*ch, user->fileDescriptor, channelName, target, replies))
 		return;
-	}
 
-	//  VIEW
 	if (payload.params.size() == 1) {
 		if (ch->getChannelTopic().empty())
 			sendTo(*user, ":" + serverName + " 331 " + user->username + " " + channelName + " :No topic is set");
@@ -43,18 +31,10 @@ void TopicCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	// SET
 	std::string newTopic = payload.params[1];
-
-	// if +t active, only op can change
-	if (ch->topicLockPolicy && !ch->isChannelOperator(user->fileDescriptor)) {
-		sendTo(*user, ":" + serverName + " 482 " + user->username + " " + channelName + " :You're not channel operator");
+	if (ch->topicLockPolicy && !requireOperator(*ch, user->fileDescriptor, channelName, target, replies))
 		return;
-	}
 
 	ch->setTopic(newTopic);
-
-	// broadcast for all channel
-	broadcastToChannel(userRepository, *ch,
-		prefix(*user) + " TOPIC " + channelName + " :" + newTopic);
+	broadcastToChannel(userRepository, *ch, prefix(*user) + " TOPIC " + channelName + " :" + newTopic);
 }

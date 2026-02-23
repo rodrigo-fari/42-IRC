@@ -11,15 +11,19 @@
 /* ************************************************************************** */
 
 #include "commands/NickCommand.hpp"
+#include "commands/CommandGuards.hpp"
 
 NickCommand::NickCommand(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv)
     : BaseCommand(ur, cr), clientStateRepository(csr), serverName(srv) {}
 
-void NickCommand::execute(int fd, const MessagePayload &payload)
+void NickCommand::execute(int fd, const MessagePayload &payload, ReplyCollector &replies)
 {
     ClientState &state = clientStateRepository.getClientStatus(fd);
+    User *user = userRepository.findUserByFileDescriptor(fd);
+    const std::string target = resolveReplyTarget(state, user);
+    const bool wasRegistered = state.isRegistered;
 
-    if (payload.params.empty())
+    if (!requireParams(payload.params.size(), 1, target, "NICK", replies))
         return;
 
     state.nickname = payload.params[0];
@@ -30,4 +34,8 @@ void NickCommand::execute(int fd, const MessagePayload &payload)
         if (created || userRepository.findUserByFileDescriptor(fd))
             state.isRegistered = true;
     }
+
+    if (!wasRegistered && state.isRegistered)
+        replies.raw(":" + serverName + " 001 " + state.nickname +
+            " :Welcome to the Internet Relay Network " + state.nickname);
 }

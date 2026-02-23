@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "commandHandler/ReplyCollector.hpp"
 #include "core/UserRepository.hpp"
 #include "core/ChannelRepository.hpp"
 #include "parser/IrcParser.hpp"
@@ -28,5 +29,5 @@ public:
 
 	virtual ~BaseCommand() {}
 
-	virtual void execute(int fd, const MessagePayload& payload) = 0;
+	virtual void execute(int fd, const MessagePayload& payload, ReplyCollector &replies) = 0;
 };

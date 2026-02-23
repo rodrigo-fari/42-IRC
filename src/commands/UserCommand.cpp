@@ -1,4 +1,4 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   UserCommand.cpp                                    :+:      :+:    :+:   */
@@ -11,16 +11,19 @@
 /******************************************************************************/
 
 #include "commands/UserCommand.hpp"
+#include "commands/CommandGuards.hpp"
 
 UserCommand::UserCommand(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv)
     : BaseCommand(ur, cr), clientStateRepository(csr), serverName(srv) {}
 
-void UserCommand::execute(int fd, const MessagePayload &payload)
+void UserCommand::execute(int fd, const MessagePayload &payload, ReplyCollector &replies)
 {
     ClientState &state = clientStateRepository.getClientStatus(fd);
+    User *user = userRepository.findUserByFileDescriptor(fd);
+    const std::string target = resolveReplyTarget(state, user);
+    const bool wasRegistered = state.isRegistered;
 
-
-    if (payload.params.size() < 4)
+    if (!requireParams(payload.params.size(), 4, target, "USER", replies))
         return;
 
     state.username = payload.params[0];
@@ -31,4 +34,8 @@ void UserCommand::execute(int fd, const MessagePayload &payload)
         if (created || userRepository.findUserByFileDescriptor(fd))
             state.isRegistered = true;
     }
+
+    if (!wasRegistered && state.isRegistered)
+        replies.raw(":" + serverName + " 001 " + state.nickname +
+            " :Welcome to the Internet Relay Network " + state.nickname);
 }

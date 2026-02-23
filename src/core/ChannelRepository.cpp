@@ -31,3 +31,24 @@ bool ChannelRepository::removeChannel(const std::string& channelName)
     channelsByName.erase(channelName);
     return true;
 }
+
+void ChannelRepository::removeUserFromAllChannels(int fd)
+{
+    std::map<std::string, Channel>::iterator it = channelsByName.begin();
+    while (it != channelsByName.end())
+    {
+        Channel &channel = it->second;
+        if (channel.isUserInChannel(fd))
+        {
+            channel.removeUserFromChannel(fd);
+            if (channel.empty())
+            {
+                std::map<std::string, Channel>::iterator toErase = it++;
+                channelsByName.erase(toErase);
+                continue;
+            }
+            channel.ensureAtLeastOneOperator();
+        }
+        ++it;
+    }
+}

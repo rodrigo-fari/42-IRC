@@ -1,17 +1,17 @@
-#ifndef MODECOMMAND_HPP
-#define MODECOMMAND_HPP
+#ifndef PRIVMSGCOMMAND_HPP
+#define PRIVMSGCOMMAND_HPP
 
 #include <string>
 #include "BaseCommand.hpp"
-#include "../../inc/core/ClientStateRepository.hpp"
+#include "core/ClientStateRepository.hpp"
 
-class ModeCommand : public BaseCommand {
+class PrivMsgCommand : public BaseCommand {
 private:
 	std::string serverName;
 	ClientStateRepository& clientStateRepository;
 
 public:
-	ModeCommand(UserRepository& ur, ChannelRepository& cr, ClientStateRepository& csr, const std::string& srv)
+	PrivMsgCommand(UserRepository& ur, ChannelRepository& cr, ClientStateRepository& csr, const std::string& srv)
 		: BaseCommand(ur, cr), serverName(srv), clientStateRepository(csr) {}
 
 	void execute(int fd, const MessagePayload& payload, ReplyCollector &replies);

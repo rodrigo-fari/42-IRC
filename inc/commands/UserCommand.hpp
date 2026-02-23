@@ -7,7 +7,7 @@ class UserCommand : public BaseCommand
 {
 public:
     UserCommand(UserRepository &ur, ChannelRepository &cr, ClientStateRepository &csr, const std::string &srv);
-    void execute(int fd, const MessagePayload &payload);
+    void execute(int fd, const MessagePayload &payload, ReplyCollector &replies);
 
 private:
     ClientStateRepository &clientStateRepository;

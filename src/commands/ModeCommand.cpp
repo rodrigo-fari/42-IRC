@@ -1,4 +1,5 @@
 #include "../../inc/commands/ModeCommand.hpp"
+#include "../../inc/commands/CommandGuards.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 #include <vector>
 #include <climits>
@@ -6,37 +7,26 @@
 #include <cstdlib>
 #include <sstream>
 
-void ModeCommand::execute(int fd, const MessagePayload& payload) {
-    User* sender = userRepository.findUserByFileDescriptor(fd);
-    if (!sender) return;
-
-    // needs to be registered
+void ModeCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
     ClientState& st = clientStateRepository.getClientStatus(fd);
-    if (!st.isRegistered) {
-        sendTo(*sender, ":" + serverName + " 451 " + sender->username + " :You have not registered");
-        return;
-    }
+    User* sender = userRepository.findUserByFileDescriptor(fd);
+    const std::string target = resolveReplyTarget(st, sender);
 
-    // You need at least the channel
-    if (payload.params.size() < 1) {
-        sendTo(*sender, ":" + serverName + " 461 " + sender->username + " MODE :Not enough parameters");
+    if (!requireRegistered(st, target, replies))
         return;
-    }
+    if (!sender)
+        return;
+    if (!requireParams(payload.params.size(), 1, target, "MODE", replies))
+        return;
 
     const std::string& channelName = payload.params[0];
-    Channel* channel = channelRepository.findChannelByChannelName(channelName);
-    if (!channel) {
-        sendTo(*sender, ":" + serverName + " 403 " + sender->username + " " + channelName + " :No such channel");
+    Channel* channel = requireChannelExists(channelRepository, channelName, target, replies);
+    if (!channel)
         return;
-    }
 
-    // You have to be a member
-    if (!channel->isUserInChannel(sender->fileDescriptor)) {
-        sendTo(*sender, ":" + serverName + " 442 " + sender->username + " " + channelName + " :You're not on that channel");
+    if (!requireMembership(*channel, sender->fileDescriptor, channelName, target, replies))
         return;
-    }
 
-    // set MODE #chan
     if (payload.params.size() == 1) {
         std::string modes = "+";
         std::vector<std::string> args;
@@ -55,7 +45,8 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
             args.push_back(ss.str());
         }
 
-        if (modes == "+") modes.clear();
+        if (modes == "+")
+            modes.clear();
 
         std::string line = ":" + serverName + " 324 " + sender->username + " " + channelName;
         if (!modes.empty()) {
@@ -67,7 +58,6 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
         return;
     }
 
-    // Get mode tokens +i -k +o etc
     std::vector<std::string> modeTokens;
     size_t tokenIndex = 1;
     while (tokenIndex < payload.params.size() && !payload.params[tokenIndex].empty() &&
@@ -79,11 +69,8 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
     if (modeTokens.empty())
         return;
 
-    // Only OP can change it
-    if (!channel->isChannelOperator(sender->fileDescriptor)) {
-        sendTo(*sender, ":" + serverName + " 482 " + sender->username + " " + channelName + " :You're not channel operator");
+    if (!requireOperator(*channel, sender->fileDescriptor, channelName, target, replies))
         return;
-    }
 
     std::vector<char> parsedSigns;
     std::vector<char> parsedModes;
@@ -102,8 +89,8 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
             }
 
             if (sign == '\0') {
-                sendTo(*sender, ":" + serverName + " 472 " + sender->username + " " + channelName + " " +
-                               std::string(1, c) + " :is unknown mode char to me");
+                replies.error(ErrorReply(ERR_UNKNOWNMODE, target, channelName, std::string(1, c),
+                    "is unknown mode char to me"));
                 continue;
             }
 
@@ -113,8 +100,8 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
                 continue;
             }
 
-            sendTo(*sender, ":" + serverName + " 472 " + sender->username + " " + channelName + " " +
-                           std::string(1, c) + " :is unknown mode char to me");
+            replies.error(ErrorReply(ERR_UNKNOWNMODE, target, channelName, std::string(1, c),
+                "is unknown mode char to me"));
         }
     }
 
@@ -132,8 +119,8 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
         }
 
         if (argIndex >= payload.params.size()) {
-            sendTo(*sender, ":" + serverName + " 461 " + sender->username + " MODE " +
-                           std::string(1, sign) + std::string(1, mode) + " :Not enough parameters");
+            replies.error(ErrorReply(ERR_NEEDMOREPARAMS, target,
+                "MODE " + std::string(1, sign) + std::string(1, mode), "", "Not enough parameters"));
             parsedArgs.push_back("");
             continue;
         }
@@ -142,7 +129,6 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
         ++argIndex;
     }
 
-    // validate +l
     for (size_t i = 0; i < parsedModes.size(); ++i) {
         if (!(parsedSigns[i] == '+' && parsedModes[i] == 'l'))
             continue;
@@ -167,35 +153,32 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
         }
 
         if (!valid) {
-            sendTo(*sender, ":" + serverName + " 696 " + sender->username + " " + channelName +
-                           " l :Invalid mode parameter");
+            replies.error(ErrorReply(ERR_INVALIDMODEPARAM, target, channelName, "l", "Invalid mode parameter"));
             parsedArgs[i].clear();
         }
     }
 
-    // validate +/-o
     for (size_t i = 0; i < parsedModes.size(); ++i) {
         if (parsedModes[i] != 'o')
             continue;
         if (parsedArgs[i].empty())
             continue;
 
-        User* target = userRepository.findUserByUsername(parsedArgs[i]);
-        if (!target) {
-            sendTo(*sender, ":" + serverName + " 401 " + sender->username + " " + parsedArgs[i] + " :No such nick");
+        User* targetUser = userRepository.findUserByUsername(parsedArgs[i]);
+        if (!targetUser) {
+            replies.error(ErrorReply(ERR_NOSUCHNICK, target, "", parsedArgs[i], "No such nick"));
             parsedArgs[i].clear();
             continue;
         }
 
-        if (!channel->isUserInChannel(target->fileDescriptor)) {
-            sendTo(*sender, ":" + serverName + " 441 " + sender->username + " " + parsedArgs[i] + " " + channelName +
-                           " :They aren't on that channel");
+        if (!channel->isUserInChannel(targetUser->fileDescriptor)) {
+            replies.error(ErrorReply(ERR_USERNOTINCHANNEL, target, channelName, parsedArgs[i],
+                "They aren't on that channel"));
             parsedArgs[i].clear();
             continue;
         }
     }
 
-    // i/t
     for (size_t i = 0; i < parsedModes.size(); ++i) {
         if (parsedModes[i] == 'i') {
             channel->inviteOnlyPolicy = (parsedSigns[i] == '+');
@@ -207,7 +190,6 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
         }
     }
 
-    // k/l
     for (size_t i = 0; i < parsedModes.size(); ++i) {
         if (parsedModes[i] == 'k') {
             if (parsedSigns[i] == '+') {
@@ -242,27 +224,24 @@ void ModeCommand::execute(int fd, const MessagePayload& payload) {
         }
     }
 
-    // o
     for (size_t i = 0; i < parsedModes.size(); ++i) {
         if (parsedModes[i] != 'o')
             continue;
         if (parsedArgs[i].empty())
             continue;
 
-        User* target = userRepository.findUserByUsername(parsedArgs[i]);
-        if (!target)
+        User* targetUser = userRepository.findUserByUsername(parsedArgs[i]);
+        if (!targetUser)
             continue;
 
         if (parsedSigns[i] == '+')
-            channel->addChannelOperator(target->fileDescriptor);
+            channel->addChannelOperator(targetUser->fileDescriptor);
         else
-            channel->removeChannelOperator(target->fileDescriptor);
+            channel->removeChannelOperator(targetUser->fileDescriptor);
     }
 
-    // at least 1 op
     channel->ensureAtLeastOneOperator();
 
-    // broadcast MODE
     std::string outModes;
     std::vector<std::string> outArgs;
     char currentSign = '\0';

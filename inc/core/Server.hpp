@@ -12,7 +12,7 @@
 # include "core/ClientStateRepository.hpp"
 
 #ifndef DEBUG
-#define DEBUG 1 
+#define DEBUG 1
 #endif
 
 class Server

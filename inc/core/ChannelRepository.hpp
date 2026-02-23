@@ -26,4 +26,5 @@ public:
 	bool createChannel(const std::string& channelName);
 	bool doesChannelExists(const std::string& channelName) const;
 	bool removeChannel(const std::string& channelName);
+	void removeUserFromAllChannels(int fd);
 };

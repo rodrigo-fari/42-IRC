@@ -26,6 +26,19 @@ void set_pollout_for_fd(PollSet& pollset, int fd) {
 	}
 }
 
+static void arm_pollout_for_pending_outboxes(
+	PollSet& pollset,
+	const std::map<int, Connection>& connections,
+	UserRepository& userRepository)
+{
+	for (std::map<int, Connection>::const_iterator it = connections.begin(); it != connections.end(); ++it) {
+		const int fd = it->first;
+		User* user = userRepository.findUserByFileDescriptor(fd);
+		if (user && !user->outbox.empty())
+			set_pollout_for_fd(pollset, fd);
+	}
+}
+
 int Server::set_nonblocking(int fd) {
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags < 0)
@@ -114,6 +127,7 @@ void Server::disconnect(std::vector<pollfd>& pfds, std::size_t i) {
 		connections[fd].clearInBuffer();
 		parserDispatcher.clearClient(fd);
 		clientStateRepository.remove(fd);
+		channelRepository.removeUserFromAllChannels(fd);
 		userRepository.removeUserByFileDescriptor(fd);
 		connections[fd].socket.closeSocket();
 		connections.erase(fd);
@@ -171,13 +185,21 @@ void Server::handlePollIn(int fd, std::map<int, Connection>& connections, int i)
 		const ssize_t bitesRead = connections[fd].socket.receiveData(buffer, sizeof(buffer));
 		if (bitesRead > 0) {
 			std::string rawData(buffer, bitesRead);
-			std::string response = parserDispatcher.processData(fd, rawData);
-			connections[fd].outBuffer += response;
+			DispatchResult dispatchResult = parserDispatcher.processData(fd, rawData);
+			connections[fd].outBuffer += dispatchResult.wire;
+			if (dispatchResult.closeAfterFlush) {
+				ClientState& state = clientStateRepository.getClientStatus(fd);
+				state.closeAfterFlush = true;
+			}
+			if (dispatchResult.fatalInternal) {
+				std::cerr << "[DISPATCH ERROR] fatalInternal on fd=" << fd << std::endl;
+			}
 			if (DEBUG)
 				std::cout << "[handlePollIn] Client fd=" << fd << "says:  " << rawData << std::endl;
 			User* user = userRepository.findUserByFileDescriptor(fd);
-			if (!response.empty() || (user && !user->outbox.empty()))
+			if (!dispatchResult.wire.empty() || (user && !user->outbox.empty()))
 				set_pollout_for_fd(pollset, fd);
+			arm_pollout_for_pending_outboxes(pollset, connections, userRepository);
 			continue;
 		}
 

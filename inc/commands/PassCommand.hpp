@@ -1,20 +1,22 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Pass.hpp                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/02/15 17:51:33 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 14:18:31 by rde-fari         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-#pragma once
+#ifndef PASSCOMMAND_HPP
+#define PASSCOMMAND_HPP
 
 #include <string>
-#include <map>
-#include <iostream>
-#include "parser/IrcParser.hpp"
+#include "BaseCommand.hpp"
+#include "core/ClientStateRepository.hpp"
 
-std::string handlePass(int fd, const MessagePayload& payload);
+class PassCommand : public BaseCommand {
+private:
+	std::string serverName;
+	std::string serverPassword;
+	ClientStateRepository& clientStateRepository;
+
+public:
+	PassCommand(UserRepository& ur, ChannelRepository& cr, ClientStateRepository& csr,
+		const std::string& srv, const std::string& password)
+		: BaseCommand(ur, cr), serverName(srv), serverPassword(password), clientStateRepository(csr) {}
+
+	void execute(int fd, const MessagePayload& payload, ReplyCollector &replies);
+};
+
+#endif

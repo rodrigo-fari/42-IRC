@@ -1,21 +1,36 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Pass.cpp                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/02/15 17:51:28 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/17 21:35:16 by rde-fari         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "commands/PassCommand.hpp"
+#include "commands/CommandGuards.hpp"
 
-std::string handlePass(int fd, const MessagePayload& payload)
+void PassCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies)
 {
-	(void)fd; // Avoid unused parameter warning
-	(void)payload; // Avoid unused parameter warning
-	//!FUNCTION STILL UNDER DEVELOPMENT
-	return ("");
+	ClientState &state = clientStateRepository.getClientStatus(fd);
+	User *user = userRepository.findUserByFileDescriptor(fd);
+	const std::string target = resolveReplyTarget(state, user);
+
+	if (state.isRegistered)
+	{
+		replies.error(ErrorReply(ERR_ALREADYREGISTERED, target, "", "", "You may not reregister"));
+		return;
+	}
+
+	if (!requireParams(payload.params.size(), 1, target, "PASS", replies))
+		return;
+
+	if (payload.params[0] != serverPassword)
+	{
+		replies.error(ErrorReply(ERR_PASSWDMISMATCH, target, "", "", "Password incorrect"));
+		return;
+	}
+
+	state.hasPassword = true;
+	if (!state.isRegistered && state.hasPassword && state.hasNickname && state.hasUsername)
+	{
+		bool created = userRepository.createUser(fd, state.nickname, "");
+		if (created || userRepository.findUserByFileDescriptor(fd))
+		{
+			state.isRegistered = true;
+			replies.raw(":" + serverName + " 001 " + state.nickname +
+				" :Welcome to the Internet Relay Network " + state.nickname);
+		}
+	}
 }

@@ -14,7 +14,7 @@ public:
     PartCommand(UserRepository& ur, ChannelRepository& cr, ClientStateRepository& csr, const std::string& srv)
         : BaseCommand(ur, cr), serverName(srv), clientStateRepository(csr) {}
 
-    void execute(int fd, const MessagePayload& payload);
+    void execute(int fd, const MessagePayload& payload, ReplyCollector &replies);
 };
 
 #endif

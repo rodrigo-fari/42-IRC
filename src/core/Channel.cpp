@@ -1,4 +1,5 @@
 #include "../../inc/commands/Channel.hpp"
+#include <iostream>
 #include <algorithm>
 
 Channel::Channel()
@@ -97,8 +98,16 @@ std::vector<int> Channel::getUsersInChannelJoinOrder() const {
 
 // ir ensures there is at least one op on te channel. promoting the first member found
 int Channel::ensureAtLeastOneOperator() {
-    if (operatorsCount() > 0) return -1;
-    if (empty()) return -1;
+    for (std::set<int>::iterator it = _channelOperators.begin(); it != _channelOperators.end(); ) {
+        if (!isUserInChannel(*it)) {
+            std::set<int>::iterator toErase = it++;
+            _channelOperators.erase(toErase);
+            continue;
+        }
+        ++it;
+    }
+
+    std::cout << "OPERATOR " << operatorsCount() << std::endl;
 
     for (size_t i = 0; i < _usersJoinOrder.size(); ++i) {
         int fd = _usersJoinOrder[i];

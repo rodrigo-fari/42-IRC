@@ -1,58 +1,41 @@
 #include "../../inc/commands/PartCommand.hpp"
-#include "../../inc/commands/CommandHelpers.hpp"
 #include "../../inc/commands/Channel.hpp"
+#include "../../inc/commands/CommandGuards.hpp"
+#include "../../inc/commands/CommandHelpers.hpp"
 
-void PartCommand::execute(int fd, const MessagePayload& payload) {
-	User* user = userRepository.findUserByFileDescriptor(fd);
-	if (!user) return;
-
+void PartCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
+	User* user = userRepository.findUserByFileDescriptor(fd);
+	const std::string target = resolveReplyTarget(state, user);
 
-	// needs to be registered
-	if (!state.isRegistered) {
-		sendTo(*user, ":" + serverName + " 451 " + user->username + " :You have not registered");
+	if (!requireRegistered(state, target, replies))
 		return;
-	}
-
-	// payload.params
-	if (payload.params.size() < 1) {
-		sendTo(*user, ":" + serverName + " 461 " + user->username + " PART :Not enough parameters");
+	if (!user)
 		return;
-	}
+	if (!requireParams(payload.params.size(), 1, target, "PART", replies))
+		return;
 
 	std::string channelName = payload.params[0];
-
-	Channel* ch = channelRepository.findChannelByChannelName(channelName);
-	if (!ch) {
-		sendTo(*user, ":" + serverName + " 403 " + user->username + " " + channelName + " :No such channel");
+	Channel* ch = requireChannelExists(channelRepository, channelName, target, replies);
+	if (!ch)
 		return;
-	}
 
-	// you have to be a channel member
-	if (!ch->isUserInChannel(user->fileDescriptor)) {
-		sendTo(*user, ":" + serverName + " 442 " + user->username + " " + channelName + " :You're not on that channel");
+	if (!requireMembership(*ch, user->fileDescriptor, channelName, target, replies))
 		return;
-	}
 
-	// reason, if there is one
 	std::string trailing = "";
 	if (payload.params.size() >= 2)
 		trailing = payload.params[1];
 
 	std::string msg = trailing.empty() ? "" : " :" + trailing;
-
-	// warns all members before remove
 	broadcastToChannel(userRepository, *ch, prefix(*user) + " PART " + channelName + msg);
 
-	// remove user from channel
 	ch->removeUserFromChannel(user->fileDescriptor);
 
-	// void channel, remove repo
 	if (ch->empty()) {
 		channelRepository.removeChannel(channelName);
 		return;
 	}
 
-	// ensures that some option still exists
 	ch->ensureAtLeastOneOperator();
 }

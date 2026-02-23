@@ -1,4 +1,4 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   ParserAndDispatch.cpp                              :+:      :+:    :+:   */
@@ -21,22 +21,22 @@ ParserAndDispatcher::~ParserAndDispatcher()
 {
 }
 
-std::string ParserAndDispatcher::processData(int fd, const std::string& rawData)
+DispatchResult ParserAndDispatcher::processData(int fd, const std::string& rawData)
 {
 	std::vector<std::string> framedMessages;
-	std::string response;
-	
-	// Step 1: Frame - extract complete messages from raw data
+	DispatchResult aggregated;
+
 	framedMessages = _framer.processRawData(fd, rawData);
-	
-	// Step 2: Parse and Dispatch - process each complete message
 	for (size_t i = 0; i < framedMessages.size(); i++)
 	{
 		MessagePayload payload = parseMessage(framedMessages[i]);
-		response += _dispatcher.dispatch(fd, payload);
+		DispatchResult result = _dispatcher.dispatch(fd, payload);
+		aggregated.wire += result.wire;
+		aggregated.closeAfterFlush = aggregated.closeAfterFlush || result.closeAfterFlush;
+		aggregated.fatalInternal = aggregated.fatalInternal || result.fatalInternal;
 	}
-	
-	return response;
+
+	return aggregated;
 }
 
 void ParserAndDispatcher::clearClient(int fd)

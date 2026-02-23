@@ -12,7 +12,6 @@ struct Connection
 	Connection();
 	Connection(int fd);
 	void clearInBuffer() { inBuffer.clear(); }
-	// Connection(Socket &s) : socket(std::move(s)) {}
 };
 
 struct PollSet

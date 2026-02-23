@@ -83,6 +83,6 @@ fclean: clean
 re: fclean all
 
 rr: re
-	@./$(NAME)
+	@./$(NAME) 1111 cena
 
 .PHONY: all clean fclean re rr

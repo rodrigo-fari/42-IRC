@@ -1,4 +1,4 @@
-/******************************************************************************/
+/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
@@ -11,69 +11,55 @@
 /******************************************************************************/
 
 #include <iostream>
-// #include "core/Core.hpp"
-#include "parser/IrcMessageFramer.hpp"
-#include "parser/IrcParser.hpp"
+#include <string>
+#include <cstdlib>
+#include <cctype>
 #include "../inc/core/Server.hpp"
+
+static bool isValidPort(const char *arg)
+{
+	if (!arg || !*arg)
+		return false;
+
+	std::string s(arg);
+	for (std::string::size_type i = 0; i < s.size(); ++i)
+	{
+		if (!std::isdigit(static_cast<unsigned char>(s[i])))
+			return false;
+	}
+
+	long p = std::strtol(arg, 0, 10);
+	return (p >= 1 && p <= 65535);
+}
 
 int main(int argc, char **argv)
 {
+	if (argc != 3)
+	{
+		std::cerr << "Usage: ./ircserv <port 1024-65535> <password>" << std::endl;
+		return 1;
+	}
 
-	std::string port = "6667";
-	std::string password = "pass";
-	if (argc > 1)
-		port = argv[1];
-	if (argc > 2)
-		password = argv[2];
+	if (!isValidPort(argv[1]))
+	{
+		std::cerr << "Invalid port: " << argv[1] << std::endl;
+		std::cerr << "Usage: ./ircserv <port 1024-65535> <password>" << std::endl;
+		return 1;
+	}
 
-	Server server(port, password);
-	server.init();
+	std::string port = argv[1];
+	std::string password = argv[2];
+
+	try
+	{
+		Server server(port, password);
+		server.init();
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "Startup error: " << e.what() << std::endl;
+		return 1;
+	}
+
 	return 0;
-
-	// {
-	// 	(void)argc;
-	// 	(void)argv;
-
-	// 	std::string a = "PRIVMSG #43 :Hello world!";
-	// 	std::string b = "    :nick!user@host PRIVMSG #a :hello world";
-	// 	std::string c = "PING :server";
-	// 	std::string d = "USER drigo 0 * :Rodrigo Silva";
-
-	// 	MessagePayload MP;
-
-	// 	//* TEST MessagePayload ver.1
-	// 	std::cout << "[Input]= " << a << "\n";
-	// 	MP = parseMessage(a);
-	// 	std::cout << "[Command]= " << MP.command << "\n";
-	// 	for(size_t i =gitcheckout  0; i < MP.params.size(); i++)
-	// 		std::cout << "[Param: " << i << "]= " << MP.params.at(i) << "\n";
-
-	// 	std::cout << "\n";
-
-	// 	//* TEST MessagePayload ver.2
-	// 	std::cout << "[Input]= " << b << "\n";
-	// 	MP = parseMessage(b);
-	// 	std::cout << "[Command]= " << MP.command << "\n";
-	// 	for(size_t i = 0; i < MP.params.size(); i++)
-	// 		std::cout << "[Param: " << i << "]= " << MP.params.at(i) << "\n";
-
-	// 	std::cout << "\n";
-
-	// 	//* TEST MessagePayload ver.3
-	// 	std::cout << "[Input]= " << c << "\n";
-	// 	MP = parseMessage(c);
-	// 	std::cout << "[Command]= " << MP.command << "\n";
-	// 	for(size_t i = 0; i < MP.params.size(); i++)
-	// 		std::cout << "[Param: " << i << "]= " << MP.params.at(i) << "\n";
-
-	// 	std::cout << "\n";
-
-	// 	//* TEST MessagePayload ver.4
-	// 	std::cout << "[Input]= " << d << "\n";
-	// 	MP = parseMessage(d);
-	// 	std::cout << "[Command]= " << MP.command << "\n";
-	// 	for(size_t i = 0; i < MP.params.size(); i++)
-	// 		std::cout << "[Param: " << i << "]= " << MP.params.at(i) << "\n";
-	// }
-	return (0);
 }
