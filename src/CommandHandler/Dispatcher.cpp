@@ -16,6 +16,7 @@
 #include "commands/PartCommand.hpp"
 #include "commands/TopicCommand.hpp"
 #include "commands/InviteCommand.hpp"
+#include "commands/ModeCommand.hpp"
 #include "commands/NickCommand.hpp"
 #include "commands/UserCommand.hpp"
 #include "commands/CommandHelpers.hpp"
@@ -104,6 +105,14 @@ std::string Dispatcher::dispatch(int fd, const MessagePayload &payload)
 	{
 		InviteCommand inviteCmd(userRepository, channelRepository, clientStateRepository, serverName);
 		inviteCmd.execute(fd, payload);
+		return "";
+	}
+
+	// MODE command
+	if (cmd == "MODE")
+	{
+		ModeCommand modeCmd(userRepository, channelRepository, clientStateRepository, serverName);
+		modeCmd.execute(fd, payload);
 		return "";
 	}
 
