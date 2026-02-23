@@ -8,13 +8,13 @@ void KickCommand::execute(int fd, const MessagePayload& payload) {
 
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 
-	// registrado?
+	// registered?
 	if (!state.isRegistered) {
 		sendTo(*kicker, ":" + serverName + " 451 " + kicker->username + " :You have not registered");
 		return;
 	}
 
-	// payload.params para KICK vem assim: ["#chan", "nick", "reason?"]
+	// payload.params for KICK it comes like this: "#chan", "nick", "reason?"
 	if (payload.params.size() < 2) {
 		sendTo(*kicker, ":" + serverName + " 461 " + kicker->username + " KICK :Not enough parameters");
 		return;
@@ -30,47 +30,47 @@ void KickCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	// kicker precisa estar no canal
+	// kicker needs to be on the channel
 	if (!ch->isUserInChannel(kicker->fileDescriptor)) {
 		sendTo(*kicker, ":" + serverName + " 442 " + kicker->username + " " + channelName + " :You're not on that channel");
 		return;
 	}
 
-	// só OP pode kickar
+	// only OP can kick
 	if (!ch->isChannelOperator(kicker->fileDescriptor)) {
 		sendTo(*kicker, ":" + serverName + " 482 " + kicker->username + " " + channelName + " :You're not channel operator");
 		return;
 	}
 
-	// target existe?
+	// target exist?
 	User* target = userRepository.findUserByUsername(targetNick);
 	if (!target) {
 		sendTo(*kicker, ":" + serverName + " 401 " + kicker->username + " " + targetNick + " :No such nick");
 		return;
 	}
 
-	// target está no canal?
+	// target is in the channel?
 	if (!ch->isUserInChannel(target->fileDescriptor)) {
 		sendTo(*kicker, ":" + serverName + " 441 " + kicker->username + " " + targetNick + " " + channelName + " :They aren't on that channel");
 		return;
 	}
 
-	// monta linha do KICK broadcast
+	// create line a kick broadcast line
 	std::string kickLine = prefix(*kicker) + " KICK " + channelName + " " + targetNick;
 	if (!reason.empty()) kickLine += " :" + reason;
 
-	// avisa geral, inclusive o target
+	// warns everyone, including the target
 	broadcastToChannel(userRepository, *ch, kickLine);
 
-	// remove target do canal
+	// remove target the channel
 	ch->removeUserFromChannel(target->fileDescriptor);
 
-	// se canal ficou vazio, remove do repo
+	// if channel is void, delete repo
 	if (ch->empty()) {
 		channelRepository.removeChannel(channelName);
 		return;
 	}
 
-	// garante pelo menos 1 operador
+	// at latest 1 OP
 	ch->ensureAtLeastOneOperator();
 }

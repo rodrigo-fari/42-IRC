@@ -1,6 +1,6 @@
 #include "../../inc/core/ChannelRepository.hpp"
 
-// retorna ponteiro pro canal real
+// return pointer for real channel
 Channel* ChannelRepository::findChannelByChannelName(const std::string& channelName)
 {
     std::map<std::string, Channel>::iterator it = channelsByName.find(channelName);
@@ -8,23 +8,23 @@ Channel* ChannelRepository::findChannelByChannelName(const std::string& channelN
     return &it->second;
 }
 
-// checa se tem no map
+// check if this from map
 bool ChannelRepository::doesChannelExists(const std::string& channelName) const
 {
     return channelsByName.find(channelName) != channelsByName.end();
 }
 
-// cria entrada no map com defaults
+// create enter from map with defaults
 bool ChannelRepository::createChannel(const std::string& channelName)
 {
     if (doesChannelExists(channelName)) return false;
 
-    // usa construtor Channel(channelName)
+    // uses Channel(channelName)
     channelsByName[channelName] = Channel(channelName);
     return true;
 }
 
-// apaga do map
+// remove from map
 bool ChannelRepository::removeChannel(const std::string& channelName)
 {
     if (!doesChannelExists(channelName)) return false;

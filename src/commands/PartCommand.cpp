@@ -8,7 +8,7 @@ void PartCommand::execute(int fd, const MessagePayload& payload) {
 
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 
-	// precisa estar registrado
+	// needs to be registered
 	if (!state.isRegistered) {
 		sendTo(*user, ":" + serverName + " 451 " + user->username + " :You have not registered");
 		return;
@@ -28,31 +28,31 @@ void PartCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	// tem que ser membro do canal
+	// you have to be a channel member
 	if (!ch->isUserInChannel(user->fileDescriptor)) {
 		sendTo(*user, ":" + serverName + " 442 " + user->username + " " + channelName + " :You're not on that channel");
 		return;
 	}
 
-	// motivo, se existir
+	// reason, if there is one
 	std::string trailing = "";
 	if (payload.params.size() >= 2)
 		trailing = payload.params[1];
 
 	std::string msg = trailing.empty() ? "" : " :" + trailing;
 
-	// avisa geral antes de remover
+	// warns all members before remove
 	broadcastToChannel(userRepository, *ch, prefix(*user) + " PART " + channelName + msg);
 
-	// remove do canal
+	// remove user from channel
 	ch->removeUserFromChannel(user->fileDescriptor);
 
-	// canal vazio, remove do repo
+	// void channel, remove repo
 	if (ch->empty()) {
 		channelRepository.removeChannel(channelName);
 		return;
 	}
 
-	// garante que ainda exista algum op
+	// ensures that some option still exists
 	ch->ensureAtLeastOneOperator();
 }

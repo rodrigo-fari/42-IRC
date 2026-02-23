@@ -10,13 +10,13 @@ void JoinCommand::execute(int fd, const MessagePayload& payload) {
 
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 
-	// precisa estar registrado
+	// needs to be registered
 	if (!state.isRegistered) {
 		sendTo(*user, ":" + serverName + " 451 " + user->username + " :You have not registered");
 		return;
 	}
 
-	// payload.params para JOIN vem assim: ["#chan", "key?"]
+	// payload.params for JOIN it comes like this "#chan", "key?"
 	if (payload.params.size() < 1) {
 		sendTo(*user, ":" + serverName + " 461 " + user->username + " JOIN :Not enough parameters");
 		return;
@@ -61,11 +61,11 @@ void JoinCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	// entra
+	// enter to channel
 	ch->addUserToChannel(user->fileDescriptor);
 	ch->uninviteUser(user->fileDescriptor);
 
-	// primeiro a entrar vira op
+	// first to enter becomes OP
 	if (created)
 		ch->addChannelOperator(user->fileDescriptor);
 

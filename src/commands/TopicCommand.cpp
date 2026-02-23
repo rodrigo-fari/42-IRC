@@ -8,13 +8,13 @@ void TopicCommand::execute(int fd, const MessagePayload& payload) {
 
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 
-	// precisa estar registrado
+	// needs to be registered
 	if (!state.isRegistered) {
 		sendTo(*user, ":" + serverName + " 451 " + user->username + " :You have not registered");
 		return;
 	}
 
-	// payload.params para TOPIC vem assim: ["#chan"] ou ["#chan", "novo tópico..."]
+	// payload.params for TOPIC comes like this: "#chan" ou "#chan", "new topic..."
 	if (payload.params.size() < 1) {
 		sendTo(*user, ":" + serverName + " 461 " + user->username + " TOPIC :Not enough parameters");
 		return;
@@ -28,13 +28,13 @@ void TopicCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	// tem que ser membro do canal
+	// have to be a channel member
 	if (!ch->isUserInChannel(user->fileDescriptor)) {
 		sendTo(*user, ":" + serverName + " 442 " + user->username + " " + channelName + " :You're not on that channel");
 		return;
 	}
 
-	// ---- VIEW ----
+	//  VIEW
 	if (payload.params.size() == 1) {
 		if (ch->getChannelTopic().empty())
 			sendTo(*user, ":" + serverName + " 331 " + user->username + " " + channelName + " :No topic is set");
@@ -43,10 +43,10 @@ void TopicCommand::execute(int fd, const MessagePayload& payload) {
 		return;
 	}
 
-	// ---- SET ----
+	// SET
 	std::string newTopic = payload.params[1];
 
-	// se +t estiver ativo, só op pode mudar
+	// if +t active, only op can change
 	if (ch->topicLockPolicy && !ch->isChannelOperator(user->fileDescriptor)) {
 		sendTo(*user, ":" + serverName + " 482 " + user->username + " " + channelName + " :You're not channel operator");
 		return;
@@ -54,7 +54,7 @@ void TopicCommand::execute(int fd, const MessagePayload& payload) {
 
 	ch->setTopic(newTopic);
 
-	// broadcast pro canal todo
+	// broadcast for all channel
 	broadcastToChannel(userRepository, *ch,
 		prefix(*user) + " TOPIC " + channelName + " :" + newTopic);
 }

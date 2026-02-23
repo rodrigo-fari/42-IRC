@@ -26,18 +26,18 @@ const std::string& Channel::getChannelName() const { return _channelName; }
 const std::string& Channel::getChannelTopic() const { return _channelTopic; }
 void Channel::setTopic(const std::string& topic) { _channelTopic = topic; }
 
-// verifica se o membro foi encontrado no conteiner
+// checks if the member was found in the container
 bool Channel::isUserInChannel(int fd) const {
     return _usersInChannel.find(fd) != _usersInChannel.end();
 }
 
-// verifica se o operador foi encontrado no conteiner
+// checks if the OP was found in the container.
 bool Channel::isChannelOperator(int fd) const {
     return _channelOperators.find(fd) != _channelOperators.end();
 }
 
-// tenta inserir no conteiner de membros, se foi novo registra
-// se ja existia diz que nao adicionou
+// Try adding it to the members container; if it's new, register it
+// If it already existed, say it didn't add it
 bool Channel::addUserToChannel(int fd) {
     std::pair<std::set<int>::iterator, bool> res = _usersInChannel.insert(fd);
     if (res.second) {
@@ -47,8 +47,8 @@ bool Channel::addUserToChannel(int fd) {
     return false;
 }
 
-// se nao for membro retorna falso,
-// se for remove do conteiner e do join order
+// if it's not a member, return false
+// if it is, remove it from the container and join order
 bool Channel::removeUserFromChannel(int fd) {
     if (!isUserInChannel(fd)) return false;
 
@@ -59,22 +59,22 @@ bool Channel::removeUserFromChannel(int fd) {
     return true;
 }
 
-// verifica se e membro e tenta promover a opererador,
-//se ja era operador ou nao era membro retorna falso
+// check if they are a memeber and attempts to promote to op
+// if they were already an op or not member, it return false
 bool Channel::addChannelOperator(int fd) {
     if (!isUserInChannel(fd)) return false;
     std::pair<std::set<int>::iterator, bool> res = _channelOperators.insert(fd);
     return res.second;
 }
 
-// verifica se e operador e tenta remover a opererador
+// check if it is an op and tries to remove the op
 bool Channel::removeChannelOperator(int fd) {
     if (!isChannelOperator(fd)) return false;
     _channelOperators.erase(fd);
     return true;
 }
 
-// verifica se o membro esta na lista de convidados
+// check if it member is on the invite list
 bool Channel::isUserInvited(int fd) const {
     return _invitedUsers.find(fd) != _invitedUsers.end();
 }
@@ -95,7 +95,7 @@ std::vector<int> Channel::getUsersInChannelJoinOrder() const {
     return out;
 }
 
-// garante que haja pelo menos um operador no canal, promovendo o primeiro membro encontrado
+// ir ensures there is at least one op on te channel. promoting the first member found
 int Channel::ensureAtLeastOneOperator() {
     if (operatorsCount() > 0) return -1;
     if (empty()) return -1;
