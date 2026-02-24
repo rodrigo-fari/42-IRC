@@ -3,7 +3,7 @@
 #include "../../inc/commands/CommandGuards.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 
-void JoinCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
+void JoinCommand::execute(int fd, const MessagePayload& payload, ReplyCollector& replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 	User* user = userRepository.findUserByFileDescriptor(fd);
 	const std::string target = resolveReplyTarget(state, user);
@@ -31,23 +31,30 @@ void JoinCommand::execute(int fd, const MessagePayload& payload, ReplyCollector 
 		created = true;
 		ch = channelRepository.findChannelByChannelName(channelName);
 	}
-	if (!ch) return;
+	if (!ch)
+		return;
 
 	if (ch->isUserInChannel(user->fileDescriptor))
 		return;
 
 	if (ch->inviteOnlyPolicy && !ch->isUserInvited(user->fileDescriptor)) {
-		replies.error(ErrorReply(ERR_INVITEONLYCHAN, target, "", channelName, "Cannot join channel (+i)"));
+		replies.error(
+			ErrorReply(ERR_INVITEONLYCHAN, target, "", channelName, "Cannot join channel (+i)")
+		);
 		return;
 	}
 
 	if (ch->hasChannelPassword && ch->channelPassword != providedKey) {
-		replies.error(ErrorReply(ERR_BADCHANNELKEY, target, "", channelName, "Cannot join channel (+k)"));
+		replies.error(
+			ErrorReply(ERR_BADCHANNELKEY, target, "", channelName, "Cannot join channel (+k)")
+		);
 		return;
 	}
 
 	if (ch->hasMaxUsersAmount && ch->usersCount() >= static_cast<size_t>(ch->maxUsersAmount)) {
-		replies.error(ErrorReply(ERR_CHANNELISFULL, target, "", channelName, "Cannot join channel (+l)"));
+		replies.error(
+			ErrorReply(ERR_CHANNELISFULL, target, "", channelName, "Cannot join channel (+l)")
+		);
 		return;
 	}
 

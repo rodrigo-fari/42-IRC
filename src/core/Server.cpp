@@ -26,7 +26,7 @@ void set_pollout_for_fd(PollSet& pollset, int fd) {
 	}
 }
 
-static void arm_pollout_for_pending_outboxes(
+static void set_pollout_for_pending_outboxes(
 	PollSet& pollset,
 	const std::map<int, Connection>& connections,
 	UserRepository& userRepository)
@@ -195,11 +195,11 @@ void Server::handlePollIn(int fd, std::map<int, Connection>& connections, int i)
 				std::cerr << "[DISPATCH ERROR] fatalInternal on fd=" << fd << std::endl;
 			}
 			if (DEBUG)
-				std::cout << "[handlePollIn] Client fd=" << fd << "says:  " << rawData << std::endl;
+				std::cout << "[NETWORK-POLLIN] Client fd=" << fd << "says:  " << rawData << std::endl;
 			User* user = userRepository.findUserByFileDescriptor(fd);
 			if (!dispatchResult.wire.empty() || (user && !user->outbox.empty()))
 				set_pollout_for_fd(pollset, fd);
-			arm_pollout_for_pending_outboxes(pollset, connections, userRepository);
+			set_pollout_for_pending_outboxes(pollset, connections, userRepository);
 			continue;
 		}
 

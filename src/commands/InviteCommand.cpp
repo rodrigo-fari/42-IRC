@@ -3,7 +3,7 @@
 #include "../../inc/commands/CommandGuards.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 
-void InviteCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
+void InviteCommand::execute(int fd, const MessagePayload& payload, ReplyCollector& replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 	User* inviter = userRepository.findUserByFileDescriptor(fd);
 	const std::string target = resolveReplyTarget(state, inviter);
@@ -33,11 +33,16 @@ void InviteCommand::execute(int fd, const MessagePayload& payload, ReplyCollecto
 	}
 
 	if (ch->isUserInChannel(invitedUser->fileDescriptor)) {
-		replies.error(ErrorReply(ERR_USERONCHANNEL, target, channelName, targetNick, "is already on channel"));
+		replies.error(
+			ErrorReply(ERR_USERONCHANNEL, target, channelName, targetNick, "is already on channel")
+		);
 		return;
 	}
 
 	ch->inviteUser(invitedUser->fileDescriptor);
 	sendTo(*invitedUser, prefix(*inviter) + " INVITE " + targetNick + " " + channelName);
-	sendTo(*inviter, ":" + serverName + " 341 " + inviter->username + " " + targetNick + " " + channelName);
+	sendTo(
+		*inviter,
+		":" + serverName + " 341 " + inviter->username + " " + targetNick + " " + channelName
+	);
 }

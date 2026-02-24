@@ -3,7 +3,7 @@
 #include "../../inc/commands/CommandGuards.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 
-void PartCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
+void PartCommand::execute(int fd, const MessagePayload& payload, ReplyCollector& replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 	User* user = userRepository.findUserByFileDescriptor(fd);
 	const std::string target = resolveReplyTarget(state, user);

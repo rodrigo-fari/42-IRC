@@ -3,7 +3,7 @@
 #include "../../inc/commands/CommandGuards.hpp"
 #include "../../inc/commands/CommandHelpers.hpp"
 
-void KickCommand::execute(int fd, const MessagePayload& payload, ReplyCollector &replies) {
+void KickCommand::execute(int fd, const MessagePayload& payload, ReplyCollector& replies) {
 	ClientState& state = clientStateRepository.getClientStatus(fd);
 	User* kicker = userRepository.findUserByFileDescriptor(fd);
 	const std::string target = resolveReplyTarget(state, kicker);
@@ -16,8 +16,8 @@ void KickCommand::execute(int fd, const MessagePayload& payload, ReplyCollector 
 		return;
 
 	std::string channelName = payload.params[0];
-	std::string targetNick  = payload.params[1];
-	std::string reason      = (payload.params.size() >= 3) ? payload.params[2] : "";
+	std::string targetNick = payload.params[1];
+	std::string reason = (payload.params.size() >= 3) ? payload.params[2] : "";
 
 	Channel* ch = requireChannelExists(channelRepository, channelName, target, replies);
 	if (!ch)
@@ -34,7 +34,9 @@ void KickCommand::execute(int fd, const MessagePayload& payload, ReplyCollector 
 	}
 
 	if (!ch->isUserInChannel(targetUser->fileDescriptor)) {
-		replies.error(ErrorReply(ERR_USERNOTINCHANNEL, target, channelName, targetNick, "They aren't on that channel"));
+		replies.error(ErrorReply(
+			ERR_USERNOTINCHANNEL, target, channelName, targetNick, "They aren't on that channel"
+		));
 		return;
 	}
 
