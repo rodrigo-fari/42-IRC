@@ -14,6 +14,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include "commands/Channel.hpp"
 
 class ChannelRepository
@@ -26,5 +27,6 @@ public:
 	bool createChannel(const std::string& channelName);
 	bool doesChannelExists(const std::string& channelName) const;
 	bool removeChannel(const std::string& channelName);
+	std::vector<std::string> getChannelsForUser(int fd) const;
 	void removeUserFromAllChannels(int fd);
 };

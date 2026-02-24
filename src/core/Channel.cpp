@@ -1,5 +1,4 @@
 #include "../../inc/commands/Channel.hpp"
-#include <iostream>
 #include <algorithm>
 
 Channel::Channel()
@@ -51,7 +50,7 @@ bool Channel::addUserToChannel(int fd) {
 bool Channel::removeUserFromChannel(int fd) {
 	if (!isUserInChannel(fd))
 		return false;
-
+	
 	_usersInChannel.erase(fd);
 	_channelOperators.erase(fd);
 	_invitedUsers.erase(fd);
@@ -119,13 +118,14 @@ int Channel::ensureAtLeastOneOperator() {
 		++it;
 	}
 
-	std::cout << "OPERATOR " << operatorsCount() << std::endl;
+	if (operatorsCount() > 0)
+		return -1;
 
 	for (size_t i = 0; i < _usersJoinOrder.size(); ++i) {
 		int fd = _usersJoinOrder[i];
 		if (isUserInChannel(fd)) {
-			addChannelOperator(fd);
-			return fd;
+			if (addChannelOperator(fd))
+				return fd;
 		}
 	}
 	return -1;

@@ -16,9 +16,7 @@ static std::string normalizeForWire(const std::string& line)
 		return line.substr(0, line.size() - 1) + "\r\n";
 	return line + "\r\n";
 }
-//!(from Rod) Hex chat by default ja manda tudo com o \r\n, nao precisa adicionar.
-//! Mesmo que nao seja pelo hex, quando nos conectamos no servidor com 'nc -C etc.'
-//! essa flag serve para que cada enter seja '\r\n' envez de '\n'.
+
 static inline void sendTo(User& u, const std::string& line) {
 	u.enqueue(normalizeForWire(line));
 }

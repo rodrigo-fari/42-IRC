@@ -1,4 +1,5 @@
 #include "../../inc/core/Server.hpp"
+#include "../../inc/commands/CommandHelpers.hpp"
 #include <cctype>
 
 Server::Server(const std::string& port, const std::string& password)
@@ -26,7 +27,7 @@ void set_pollout_for_fd(PollSet& pollset, int fd) {
 	}
 }
 
-static void set_pollout_for_pending_outboxes(
+static void arm_pollout_for_pending_outboxes(
 	PollSet& pollset,
 	const std::map<int, Connection>& connections,
 	UserRepository& userRepository)
@@ -40,13 +41,11 @@ static void set_pollout_for_pending_outboxes(
 }
 
 int Server::set_nonblocking(int fd) {
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags < 0)
-		return (-1);
-	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	return fcntl(fd, F_SETFL, O_NONBLOCK);
 }
 
 int Server::create_listener(const std::string& port) {
+	// Build a passive TCP address query so we can bind on this host/port.
 	struct addrinfo hints;
 	std::memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
@@ -60,20 +59,22 @@ int Server::create_listener(const std::string& port) {
 		return -1;
 	}
 	int listener = -1;
+	// Try each address candidate until one can be socket() + bind() + listen().
 	for (struct addrinfo* p = res; p != 0; p = p->ai_next) {
 		listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 		if (DEBUG)
 			std::cout << "[NETWORK] socket() returned: " << listener << std::endl;
 		if (listener < 0) {
 			if (DEBUG)
-				std::cout << "[NETWORK] socket() failed: " << strerror(errno) << std::endl;
+				std::cout << "[NETWORK] socket() failed: "<< std::endl;
 			continue;
 		}
 		Socket sock(listener);
+		// SO_REUSEADDR lets us restart quickly without waiting for TIME_WAIT.
 		int yes = 1;
 		if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) < 0) {
 			if (DEBUG)
-				std::cout << "[NETWORK] setsockopt() failed: " << strerror(errno) << std::endl;
+				std::cout << "[NETWORK] setsockopt() failed: "<< std::endl;
 			close(listener);
 			listener = -1;
 			continue;
@@ -81,7 +82,7 @@ int Server::create_listener(const std::string& port) {
 		if (DEBUG)
 			std::cout << "[NETWORK] setsockopt() success" << std::endl;
 		if (!sock.bindSocket(p)) {
-			std::cout << "[NETWORK] bind() failed: " << strerror(errno) << std::endl;
+			std::cout << "[NETWORK] bind() failed: " << std::endl;
 			close(listener);
 			listener = -1;
 			continue;
@@ -89,13 +90,14 @@ int Server::create_listener(const std::string& port) {
 		if (DEBUG)
 			std::cout << "[NETWORK] bind() success" << std::endl;
 		if (!sock.listenSocket(10)) {
-			std::cout << "[NETWORK] listen() failed: " << strerror(errno) << std::endl;
+			std::cout << "[NETWORK] listen() failed:"<< std::endl;
 			close(listener);
 			listener = -1;
 			continue;
 		}
 		if (DEBUG)
 			std::cout << "[NETWORK] listen() success" << std::endl;
+		// Listener is ready; stop probing additional address candidates.
 		break;
 	}
 	freeaddrinfo(res);
@@ -112,11 +114,6 @@ void Server::close_all() {
 	serverSocket.closeSocket();
 }
 
-// static void del_pfd(std::vector<pollfd> &pfds, std::size_t i)
-// {
-// 	pfds[i] = pfds.back();
-// 	pfds.pop_back();
-// }
 
 void Server::disconnect(std::vector<pollfd>& pfds, std::size_t i) {
 	const int fd = pfds[i].fd;
@@ -124,6 +121,20 @@ void Server::disconnect(std::vector<pollfd>& pfds, std::size_t i) {
 	std::cout << "[DISCONNECT] fd=" << fd << " disconnected (clients=" << pollset.pfds.size() - 1
 			  << ")" << std::endl;
 	if (fd != serverSocket.getSocketFd() && connections.count(fd)) {
+		// User* leavingUser = userRepository.findUserByFileDescriptor(fd);
+		// if (leavingUser) {
+		// 	const std::vector<std::string> channelNames = channelRepository.getChannelsForUser(fd);
+		// 	for (size_t c = 0; c < channelNames.size(); ++c) {
+		// 		Channel* channel = channelRepository.findChannelByChannelName(channelNames[c]);
+		// 		if (!channel)
+		// 			continue;
+		// 		broadcastToChannel(
+		// 			userRepository,
+		// 			*channel,
+		// 			":42IRC 421 " + leavingUser->username + " PART " + channel->getChannelName()
+		// 		);
+		// 	}
+		// }
 		connections[fd].clearInBuffer();
 		parserDispatcher.clearClient(fd);
 		clientStateRepository.remove(fd);
@@ -132,10 +143,10 @@ void Server::disconnect(std::vector<pollfd>& pfds, std::size_t i) {
 		connections[fd].socket.closeSocket();
 		connections.erase(fd);
 	}
-	// del_pfd(pfds, i);
 }
 
 void Server::init() {
+	// Create and validate the listening socket for this server instance.
 	int listener_fd = create_listener(port);
 	if (DEBUG)
 		std::cout << "[NETWORK] create_listener returned: " << listener_fd << std::endl;
@@ -147,29 +158,32 @@ void Server::init() {
 		std::cout << "[NETWORK] Listener socket is not valid, aborting init." << std::endl;
 		return;
 	}
+	// Listener must be non-blocking because the server is poll-driven.
 	serverSocket.setNonBlocking();
-	//* ADD LISTENER TO POLLSET
+	// Start pollset with only the listener; clients are added as they connect.
 	pollset.pfds.clear();
 	pollset.add(serverSocket.getSocketFd(), POLLIN);
+	// Enter the event loop (blocks until server shutdown/error).
 	run();
 }
 
 void Server::handleConnection(Socket serverSocket, std::map<int, Connection>& connections) {
 	if (DEBUG)
 		std::cout << "[NETWORK] POLLIN on listener fd=" << serverSocket.getSocketFd() << std::endl;
+	// Drain accept queue in one shot so we do not leave pending clients waiting.
 	while (true) {
 		int client_fd = serverSocket.acceptConnection();
 		if (client_fd < 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-			perror("accept");
+			// perror("accept");
 			break;
 		}
+		// Clients are non-blocking to fit the poll event loop model.
 		if (set_nonblocking(client_fd) < 0) {
 			if (DEBUG)
 				std::cout << "[NETWORK] set_nonblocking failed for fd=" << client_fd
-						  << " errno=" << errno << std::endl;
+						  << std::endl;
 		}
+		// Track new client in pollset + connection repository.
 		pollset.add(client_fd, POLLIN);
 		connections[client_fd] = Connection(client_fd);
 		std::cout << "[CONNECTION] accepted fd=" << client_fd
@@ -177,50 +191,49 @@ void Server::handleConnection(Socket serverSocket, std::map<int, Connection>& co
 	}
 }
 void Server::handlePollIn(int fd, std::map<int, Connection>& connections, int i) {
-	// if (DEBUG)
-	// std::cout << "[NETWORK] POLLIN event for client fd=" << fd << std::endl;
-
+	// One recv per POLLIN event. A second immediate recv on non-blocking sockets can
+	// fail transiently and should not force disconnect in this strict-flow version.
 	char buffer[4096];
-	while (true) {
-		const ssize_t bitesRead = connections[fd].socket.receiveData(buffer, sizeof(buffer));
-		if (bitesRead > 0) {
-			std::string rawData(buffer, bitesRead);
-			DispatchResult dispatchResult = parserDispatcher.processData(fd, rawData);
-			connections[fd].outBuffer += dispatchResult.wire;
-			if (dispatchResult.closeAfterFlush) {
-				ClientState& state = clientStateRepository.getClientStatus(fd);
-				state.closeAfterFlush = true;
-			}
-			if (dispatchResult.fatalInternal) {
-				std::cerr << "[DISPATCH ERROR] fatalInternal on fd=" << fd << std::endl;
-			}
-			if (DEBUG)
-				std::cout << "[NETWORK-POLLIN] Client fd=" << fd << "says:  " << rawData << std::endl;
-			User* user = userRepository.findUserByFileDescriptor(fd);
-			if (!dispatchResult.wire.empty() || (user && !user->outbox.empty()))
-				set_pollout_for_fd(pollset, fd);
-			set_pollout_for_pending_outboxes(pollset, connections, userRepository);
-			continue;
+	const ssize_t bitesRead = connections[fd].socket.receiveData(buffer, sizeof(buffer));
+	if (bitesRead > 0) {
+		// Forward raw bytes to parser/dispatcher and queue generated wire replies.
+		std::string rawData(buffer, bitesRead);
+		DispatchResult dispatchResult = parserDispatcher.processData(fd, rawData);
+		connections[fd].outBuffer += dispatchResult.wire;
+		// Some commands (e.g. QUIT/error) request "close after pending writes are sent".
+		if (dispatchResult.closeAfterFlush) {
+			ClientState& state = clientStateRepository.getClientStatus(fd);
+			state.closeAfterFlush = true;
 		}
-
-		if (bitesRead == 0) {
-			if (DEBUG)
-				std::cout << "[NETWORK] Client fd=" << fd << " disconnected (recv returned 0)"
-						  << std::endl;
-			disconnect(pollset.pfds, i);
-			break;
+		if (dispatchResult.fatalInternal) {
+			std::cerr << "[DISPATCH ERROR] fatalInternal on fd=" << fd << std::endl;
 		}
-
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			break;
-		disconnect(pollset.pfds, i);
-		break;
+		if (DEBUG)
+			std::cout << "[handlePollIn] Client fd=" << fd << "says:  " << rawData << std::endl;
+		User* user = userRepository.findUserByFileDescriptor(fd);
+		// Arm POLLOUT when we have anything queued to write.
+		if (!dispatchResult.wire.empty() || (user && !user->outbox.empty()))
+			set_pollout_for_fd(pollset, fd);
+		// Also arm POLLOUT for any other clients that got data queued indirectly.
+		arm_pollout_for_pending_outboxes(pollset, connections, userRepository);
+		return;
 	}
+
+	if (bitesRead == 0) {
+		if (DEBUG)
+			std::cout << "[NETWORK] Client fd=" << fd << " disconnected (recv returned 0)"
+					  << std::endl;
+		disconnect(pollset.pfds, i);
+		return;
+	}
+
+	// Transient recv failure on non-blocking socket: ignore and wait for next poll cycle.
 }
 void Server::handlePollOut(int fd, std::map<int, Connection>& connections, int i) {
 	if (DEBUG)
 		std::cout << "[NETWORK] POLLOUT event for fd=" << fd << std::endl;
 
+	// Move logical messages from user outbox into the raw socket outBuffer.
 	User* user = userRepository.findUserByFileDescriptor(fd);
 	if (user) {
 		while (!user->outbox.empty()) {
@@ -229,7 +242,8 @@ void Server::handlePollOut(int fd, std::map<int, Connection>& connections, int i
 		}
 	}
 
-	while (!connections[fd].outBuffer.empty()) {
+	// One send per POLLOUT event to avoid forcing disconnect on transient failures.
+	if (!connections[fd].outBuffer.empty()) {
 		if (DEBUG)
 			std::cout << "[NETWORK] POLLOUT sending to fd=" << fd << " contents='"
 					  << connections[fd].outBuffer << "' size=" << connections[fd].outBuffer.size()
@@ -237,34 +251,32 @@ void Server::handlePollOut(int fd, std::map<int, Connection>& connections, int i
 		ssize_t sent = connections[fd].socket.sendData(connections[fd].outBuffer);
 		if (DEBUG)
 			std::cout << "[DEBUG] send() returned: " << sent << std::endl;
-		if (sent > 0) {
+		if (sent > 0)
 			connections[fd].outBuffer.erase(0, sent);
-			continue;
-		}
-		if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-			break;
-		if (sent <= 0) {
+		else if (sent == 0)
 			disconnect(pollset.pfds, i);
-			break;
-		}
 	}
 
 	if (connections[fd].outBuffer.empty()) {
+		// Nothing left to write: stop listening for POLLOUT to avoid busy wakeups.
 		pollset.pfds[i].events &= ~POLLOUT;
 		ClientState& state = clientStateRepository.getClientStatus(fd);
+		// If a command requested graceful close, disconnect once flush is complete.
 		if (state.closeAfterFlush) {
 			disconnect(pollset.pfds, i);
 		}
 	}
 }
+// Main event loop:
+// - wait for socket activity with poll()
+// - dispatch each ready fd to accept/read/write handlers
+// - keep running until a fatal poll error occurs
 void Server::run() {
 	std::cout << "[SERVER] listening on port " << port << "\n";
 	while (true) {
+		// Block indefinitely until at least one fd is ready.
 		const int n = poll(&pollset.pfds[0], pollset.pfds.size(), -1);
 		if (n < 0) {
-			if (errno == EINTR)
-				continue;
-			perror("poll");
 			break;
 		}
 		std::size_t i = 0;
@@ -276,22 +288,21 @@ void Server::run() {
 				i++;
 				continue;
 			}
-			// NEW CONNECTION HANDLING
+			// ACCEPT NEW CONNECTIONS => accept as many pending clients as possible.
 			if (fd == serverSocket.getSocketFd() && (re & POLLIN)) {
 				handleConnection(serverSocket, connections);
 				i++;
 				continue;
 			}
-			// DATA RECEIVING HANDLING readAll
+			// READ- RECIVE FROM CLIENT => receive and parse inbound data.
 			if (re & POLLIN) {
 				if (connections.count(fd) == 0) {
 					i++;
 					continue;
 				}
 				handlePollIn(fd,  connections, i);
-				// continue;
 			}
-			// HANDLING SEND FROM SERVER TO CLIENT
+			// WRITE - SENT TO CLIENT => flush queued outbound data.
 			if (re & POLLOUT) {
 				if (connections.count(fd) == 0) {
 					i++;

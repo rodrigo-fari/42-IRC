@@ -46,8 +46,7 @@
 	}
 	void Socket::setNonBlocking()
 	{
-		int flags = fcntl(_fd, F_GETFL, 0);
-		fcntl(_fd, F_SETFL, flags | O_NONBLOCK);
+		fcntl(_fd, F_SETFL, O_NONBLOCK);
 	}
 
 	ssize_t Socket::sendData(const std::string &data) const

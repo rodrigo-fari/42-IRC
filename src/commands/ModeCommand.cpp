@@ -264,7 +264,7 @@ void ModeCommand::execute(int fd, const MessagePayload& payload, ReplyCollector&
 			channel->removeChannelOperator(targetUser->fileDescriptor);
 	}
 
-	channel->ensureAtLeastOneOperator();
+	const int promotedFd = channel->ensureAtLeastOneOperator();
 
 	std::string outModes;
 	std::vector<std::string> outArgs;
@@ -296,5 +296,16 @@ void ModeCommand::execute(int fd, const MessagePayload& payload, ReplyCollector&
 			line += " " + outArgs[i];
 
 		broadcastToChannel(userRepository, *channel, line);
+	}
+
+	if (promotedFd != -1) {
+		User* promoted = userRepository.findUserByFileDescriptor(promotedFd);
+		if (promoted) {
+			broadcastToChannel(
+				userRepository,
+				*channel,
+				":" + serverName + " MODE " + channelName + " +o " + promoted->username
+			);
+		}
 	}
 }

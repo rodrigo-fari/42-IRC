@@ -31,6 +31,16 @@ bool ChannelRepository::removeChannel(const std::string& channelName) {
 	return true;
 }
 
+std::vector<std::string> ChannelRepository::getChannelsForUser(int fd) const {
+	std::vector<std::string> names;
+	for (std::map<std::string, Channel>::const_iterator it = channelsByName.begin();
+		 it != channelsByName.end(); ++it) {
+		if (it->second.isUserInChannel(fd))
+			names.push_back(it->first);
+	}
+	return names;
+}
+
 void ChannelRepository::removeUserFromAllChannels(int fd) {
 	std::map<std::string, Channel>::iterator it = channelsByName.begin();
 	while (it != channelsByName.end()) {

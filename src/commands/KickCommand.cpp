@@ -52,5 +52,15 @@ void KickCommand::execute(int fd, const MessagePayload& payload, ReplyCollector&
 		return;
 	}
 
-	ch->ensureAtLeastOneOperator();
+	const int promotedFd = ch->ensureAtLeastOneOperator();
+	if (promotedFd != -1) {
+		User* promoted = userRepository.findUserByFileDescriptor(promotedFd);
+		if (promoted) {
+			broadcastToChannel(
+				userRepository,
+				*ch,
+				":" + serverName + " MODE " + channelName + " +o " + promoted->username
+			);
+		}
+	}
 }
