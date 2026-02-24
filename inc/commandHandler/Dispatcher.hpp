@@ -3,12 +3,12 @@
 /*                                                        :::      ::::::::   */
 /*   Dispatcher.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
+/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/11 21:40:52 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/20 18:58:33 by rerodrig         ###   ########.fr       */
+/*   Updated: 2026/02/24 18:35:11 by rde-fari         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #pragma once
 
@@ -37,4 +37,3 @@ public:
 
 	DispatchResult dispatch(int fd, const MessagePayload &payload);
 };
-

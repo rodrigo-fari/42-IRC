@@ -119,22 +119,19 @@ void Server::disconnect(std::vector<pollfd>& pfds, std::size_t i) {
 	const int fd = pfds[i].fd;
 	pfds.erase(pfds.begin() + i);
 	std::cout << "[DISCONNECT] fd=" << fd << " disconnected (clients=" << pollset.pfds.size() - 1
-			  << ")" << std::endl;
+	<< ")" << std::endl;
 	if (fd != serverSocket.getSocketFd() && connections.count(fd)) {
-		// User* leavingUser = userRepository.findUserByFileDescriptor(fd);
-		// if (leavingUser) {
-		// 	const std::vector<std::string> channelNames = channelRepository.getChannelsForUser(fd);
-		// 	for (size_t c = 0; c < channelNames.size(); ++c) {
-		// 		Channel* channel = channelRepository.findChannelByChannelName(channelNames[c]);
-		// 		if (!channel)
-		// 			continue;
-		// 		broadcastToChannel(
-		// 			userRepository,
-		// 			*channel,
-		// 			":42IRC 421 " + leavingUser->username + " PART " + channel->getChannelName()
-		// 		);
-		// 	}
-		// }
+		User* leavingUser = userRepository.findUserByFileDescriptor(fd);
+		if (leavingUser) {
+			const std::vector<std::string> channelNames = channelRepository.getChannelsForUser(fd);
+			for (size_t c = 0; c < channelNames.size(); ++c) {
+				Channel* channel = channelRepository.findChannelByChannelName(channelNames[c]);
+				if (!channel)
+					continue;
+				broadcastToChannel(userRepository, *channel, ":" + leavingUser->username + " PART " + channel->getChannelName());
+			}
+			arm_pollout_for_pending_outboxes(pollset, connections, userRepository);
+		}
 		connections[fd].clearInBuffer();
 		parserDispatcher.clearClient(fd);
 		clientStateRepository.remove(fd);

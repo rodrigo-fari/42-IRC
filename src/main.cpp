@@ -3,12 +3,12 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: rerodrig <rerodrig@student.42porto.com>    +#+  +:+       +#+        */
+/*   By: rde-fari <rde-fari@student.42porto.com>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/12 17:51:56 by rde-fari          #+#    #+#             */
-/*   Updated: 2026/02/20 18:27:58 by rerodrig         ###   ########.fr       */
+/*   Updated: 2026/02/24 17:01:28 by rde-fari         ###   ########.fr       */
 /*                                                                            */
-/******************************************************************************/
+/* ************************************************************************** */
 
 #include <iostream>
 #include <string>
@@ -61,5 +61,5 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	return 0;
+	return (0);
 }
