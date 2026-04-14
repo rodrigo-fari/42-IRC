@@ -1,0 +1,75 @@
+@startuml
+skinparam diagramMargin 50
+skinparam packageMargin 20
+
+actor "IRC Client" as C
+
+participant "main()\n(boot)" as MAIN
+participant "Server\n(Core Loop)" as S
+participant "poll()" as P
+
+box "Network Layer"
+  participant "createSocket()" as CS
+  participant "setNonBlocking()" as SNB
+  participant "acceptNewClient()" as ACC
+  participant "recv(fd)" as RCV
+  participant "send(fd)" as SND
+end box
+
+box "Client Management"
+  participant "ClientStateRepository" as CSR
+  participant "UserRepository" as UR
+end box
+
+== 0) Boot ==
+MAIN -> S : start(port, password)
+note right of S
+- create socket
+- set non-blocking
+- bind/listen
+- prepare pollfd list (listen fd + clients)
+- store serverPassword
+end note
+
+== 1) Accept Connection ==
+S -> P : poll(listen + clients)
+P --> S : listen fd readable
+S -> ACC : acceptNewClient()
+ACC --> S : new fd
+
+S -> UR : createUser(fd, "", "")
+UR --> S : true
+S -> CSR : getClientStatus(fd)
+CSR --> S : ClientState{all false}
+
+note right of S
+server adds fd to poll list
+end note
+
+== 2) Receive Data ==
+C -> S : sends bytes (could be partial)
+S -> P : poll(...)
+P --> S : fd readable
+
+S -> RCV : recv(fd)
+RCV --> S : raw bytes
+
+note right of S
+- process received data
+- handle partial messages
+end note
+
+== 3) Send Data ==
+S -> P : poll(...)
+P --> S : fd writable (POLLOUT)
+
+S -> UR : findUserByFileDescriptor(fd)
+UR --> S : U*
+S -> SND : flush(U.outbox) with partial sends
+note right of SND
+- attempt to send
+- if partial send: keep remaining in outbox
+- non-blocking
+end note
+
+@enduml

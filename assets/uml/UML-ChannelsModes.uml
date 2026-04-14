@@ -1,0 +1,158 @@
+@startuml
+skinparam diagramMargin 50
+skinparam packageMargin 20
+
+actor "Client" as C
+participant "ConnectionHandler\n(Server)" as S
+
+box "CommandModule / Services"
+  participant "CommandProcessor" as CP
+  participant "JoinCommand" as JOIN
+  participant "PartCommand" as PART
+  participant "TopicCommand" as TOPIC
+  participant "InviteCommand" as INV
+  participant "KickCommand" as KICK
+  participant "ModeCommand" as MODE
+end box
+
+box "PersistenceModule / Repositories"
+  participant "UserRepository" as UR
+  participant "ChannelRepository" as CR
+end box
+
+box "PersistenceModule / Models"
+  participant "User" as U
+  participant "Channel" as CH
+end box
+
+participant "MessagePayload" as MP
+
+== 1) JOIN (invite-only, key, limit) ==
+C -> S : "JOIN #42porto\r\n"
+S -> S : parse -> MP(tokens=["JOIN","#42porto"])
+S -> CP : executeCommand(fd, MP)
+CP -> JOIN : execute(fd, MP)
+JOIN -> UR : findUserByFileDescriptor(fd)
+UR --> JOIN : U
+JOIN -> CR : findChannelByChannelName("#42porto")
+CR --> JOIN : CH
+alt channel does not exist
+  JOIN -> CR : createChannel("#42porto")
+  CR --> JOIN : CH
+end
+JOIN -> CH : check policies (inviteOnly, key, limit)
+CH --> JOIN : ok/err
+alt ok
+  JOIN -> CH : addMember(U)
+  CH --> JOIN : ok
+  JOIN --> CP : notify JOIN, NAMES, TOPIC
+else err
+  JOIN --> CP : ERR (invite/key/limit)
+end
+CP --> S : reply(s)
+S -> C : server reply
+
+== 2) PART ==
+C -> S : "PART #42porto\r\n"
+S -> S : parse -> MP(tokens=["PART","#42porto"])
+S -> CP : executeCommand(fd, MP)
+CP -> PART : execute(fd, MP)
+PART -> UR : findUserByFileDescriptor(fd)
+UR --> PART : U
+PART -> CR : findChannelByChannelName("#42porto")
+CR --> PART : CH
+PART -> CH : removeMember(U)
+CH --> PART : ok
+PART --> CP : notify PART
+CP --> S : reply(s)
+S -> C : server reply
+
+== 3) TOPIC (with +t mode) ==
+C -> S : "TOPIC #42porto :new topic\r\n"
+S -> S : parse -> MP(tokens=["TOPIC","#42porto",":new topic"])
+S -> CP : executeCommand(fd, MP)
+CP -> TOPIC : execute(fd, MP)
+TOPIC -> UR : findUserByFileDescriptor(fd)
+UR --> TOPIC : U
+TOPIC -> CR : findChannelByChannelName("#42porto")
+CR --> TOPIC : CH
+TOPIC -> CH : check +t (topic lock)
+CH --> TOPIC : isOp?
+alt isOp or +t not set
+  TOPIC -> CH : setTopic("new topic")
+  CH --> TOPIC : ok
+  TOPIC --> CP : notify new topic
+else not allowed
+  TOPIC --> CP : ERR_CHANOPRIVSNEEDED
+end
+CP --> S : reply(s)
+S -> C : server reply
+
+== 4) INVITE ==
+C -> S : "INVITE user2 #42porto\r\n"
+S -> S : parse -> MP(tokens=["INVITE","user2","#42porto"])
+S -> CP : executeCommand(fd, MP)
+CP -> INV : execute(fd, MP)
+INV -> UR : findUserByFileDescriptor(fd)
+UR --> INV : U
+INV -> CR : findChannelByChannelName("#42porto")
+CR --> INV : CH
+INV -> CH : isOp(U)?
+CH --> INV : yes/no
+alt yes
+  INV -> UR : findUserByUsername("user2")
+  UR --> INV : U2
+  INV -> CH : inviteUser(U2)
+  CH --> INV : ok
+  INV --> CP : notify invite
+else not op
+  INV --> CP : ERR_CHANOPRIVSNEEDED
+end
+CP --> S : reply(s)
+S -> C : server reply
+
+== 5) KICK ==
+C -> S : "KICK #42porto user2\r\n"
+S -> S : parse -> MP(tokens=["KICK","#42porto","user2"])
+S -> CP : executeCommand(fd, MP)
+CP -> KICK : execute(fd, MP)
+KICK -> UR : findUserByFileDescriptor(fd)
+UR --> KICK : U
+KICK -> CR : findChannelByChannelName("#42porto")
+CR --> KICK : CH
+KICK -> CH : isOp(U)?
+CH --> KICK : yes/no
+alt yes
+  KICK -> UR : findUserByUsername("user2")
+  UR --> KICK : U2
+  KICK -> CH : removeMember(U2)
+  CH --> KICK : ok
+  KICK --> CP : notify kick
+else not op
+  KICK --> CP : ERR_CHANOPRIVSNEEDED
+end
+CP --> S : reply(s)
+S -> C : server reply
+
+== 6) MODE (invite-only, topic lock, key, limit, op) ==
+C -> S : "MODE #42porto +i\r\n"
+S -> S : parse -> MP(tokens=["MODE","#42porto","+i"])
+S -> CP : executeCommand(fd, MP)
+CP -> MODE : execute(fd, MP)
+MODE -> UR : findUserByFileDescriptor(fd)
+UR --> MODE : U
+MODE -> CR : findChannelByChannelName("#42porto")
+CR --> MODE : CH
+MODE -> CH : isOp(U)?
+CH --> MODE : yes/no
+alt yes
+  MODE -> CH : setMode("+i")
+  CH --> MODE : ok
+  MODE --> CP : notify mode change
+else not op
+  MODE --> CP : ERR_CHANOPRIVSNEEDED
+end
+CP --> S : reply(s)
+S -> C : server reply
+
+@enduml

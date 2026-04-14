@@ -1,0 +1,39 @@
+@startuml
+skinparam diagramMargin 50
+skinparam packageMargin 20
+
+actor "IRC Client" as CLIENT
+
+box "Server / Network (REINALDO)"
+  participant "Socket/Network"
+  participant "Event Loop"
+  participant "IrcMessageFramer"
+end box
+
+box "Parser + Commands (RODRIGO)"
+  participant "IrcParser"
+  participant "Dispatcher"
+  participant "Command Handlers"
+end box
+
+box "Channels + Modes (CHRISTOFER)"
+  participant "ChannelRepository"
+  participant "Channel Logic"
+  participant "UserRepository"
+end box
+
+CLIENT -> "Socket/Network" : TCP connect/send bytes
+"Socket/Network" -> "Event Loop" : notify readable/writable
+"Event Loop" -> "IrcMessageFramer" : pass received bytls
+"IrcMessageFramer" -> "IrcParser" : deliver complete IRC lines
+"IrcParser" -> "Dispatcher" : parse and dispatch commands
+"Dispatcher" -> "Command Handlers" : execute command
+
+"Command Handlers" -> "ChannelRepository" : channel ops
+"Command Handlers" -> "Channel Logic" : mode/permission checks
+"Command Handlers" -> "UserRepository" : user ops
+
+"Command Handlers" -> "Event Loop" : responses/messages
+"Event Loop" -> "Socket/Network" : send bytes to client
+
+@enduml
