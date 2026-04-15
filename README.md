@@ -4,7 +4,7 @@
 		<img src="https://capsule-render.vercel.app/api?type=waving&color=4fa69a&height=300&section=header&text=Internet+Relay+Chat&fontSize=90&animation=fadeIn&fontAlignY=38&desc=IRC+server+built+in+C%2B%2B+98&descAlignY=51&descAlign=62"/>
 
 <p align="center">
-	<img src="https://img.shields.io/static/v1?label=42%20Project&message=IRC%20Server&color=4fa69a&style=for-the-badge&logo=" alt="Project Overview"/>
+	<img src="https://img.shields.io/static/v1?label=C%2B%2B&message=IRC%20Server&color=4fa69a&style=for-the-badge&logo=" alt="Project Overview"/>
 
 </p>
 </div>
